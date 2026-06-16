@@ -1,0 +1,139 @@
+[
+  {
+    "input": "immunoglobulin",
+    "output": [
+      "immunoglobulins",
+      "IgG: <100 mg/dL ↓↓↓ (severely decreased; normal for age >400 mg/dL). IgA: <5 mg/dL (UNDETECTABLE). IgM: <10 mg/dL ↓↓↓ (severely decreased). IgE: <2 IU/mL (absent). Total protein: 42 g/L ↓↓ (low — reflects absent immunoglobulin contribution)."
+    ]
+  },
+  {
+    "input": "throat",
+    "output": [
+      "throat swab",
+      "Haemophilus influenzae (non-typeable) — moderate growth."
+    ]
+  },
+  {
+    "input": "cbc",
+    "output": [
+      "CBC / full blood count",
+      "WBC 6,200/µL (normal). Neutrophils 4,500/µL (normal). Lymphocytes 1,200/µL ↓ (low for age — reference 2,000–8,000). Monocytes normal. Haemoglobin 11.8 g/dL (mildly low). Platelets 320,000/µL (normal). MCV 78 fL (normal)."
+    ]
+  },
+  {
+    "input": "CBC",
+    "output": [
+      "CBC / full blood count",
+      "WBC 6,200/µL (normal). Neutrophils 4,500/µL (normal). Lymphocytes 1,200/µL ↓ (low for age — reference 2,000–8,000). Monocytes normal. Haemoglobin 11.8 g/dL (mildly low). Platelets 320,000/µL (normal). MCV 78 fL (normal)."
+    ]
+  },
+  {
+    "input": "complement",
+    "output": [
+      "complement / C3 C4",
+      "C3: 1.4 g/L (normal). C4: 0.28 g/L (normal). CH50: normal."
+    ]
+  },
+  {
+    "input": "chest x-ray",
+    "output": [
+      "chest X-ray",
+      "Bilateral lower lobe consolidation consistent with pneumonia. No pleural effusion. No cavitary lesion. No pneumatocele."
+    ]
+  },
+  {
+    "input": "chest CT",
+    "output": [
+      "chest X-ray",
+      "Bilateral lower lobe consolidation consistent with pneumonia. No pleural effusion. No cavitary lesion. No pneumatocele."
+    ]
+  },
+  {
+    "input": "abdominal",
+    "output": [
+      "abdominal ultrasound",
+      "No hepatosplenomegaly. Normal-sized liver and spleen. No abdominal lymphadenopathy. Normal bowel."
+    ]
+  },
+  {
+    "input": "lymphocyte subsets",
+    "output": [
+      "lymphocyte subsets / flow cytometry",
+      "CD3+ T cells: Normal absolute count. CD4+ T cells: Normal. CD8+ T cells: Normal. CD19+ B cells: ABSENT (0.0%) ↓↓↓ — complete absence of B lymphocytes. NK cells: Normal. BTK protein expression on monocytes: ABSENT."
+    ]
+  },
+  {
+    "input": "vaccine antibody",
+    "output": [
+      "vaccine antibody titres",
+      "Anti-pneumococcal IgG: undetectable (<0.1 µg/mL). Anti-tetanus IgG: undetectable. Anti-Hib IgG: undetectable."
+    ]
+  },
+  {
+    "input": "stool",
+    "output": [
+      "stool examination",
+      "Giardia lamblia cysts: POSITIVE (moderate load). No other parasites. No bacterial pathogen isolated."
+    ]
+  },
+  {
+    "input": "HIV",
+    "output": [
+      "HIV test",
+      "HIV 1/2 antibody: NEGATIVE."
+    ]
+  },
+  {
+    "input": "ferritin",
+    "output": [
+      "ferritin",
+      "Ferritin 18 ng/mL ↓ (low — consistent with iron deficiency from poor nutrition)."
+    ]
+  },
+  {
+    "input": "gene panel",
+    "output": [
+      "immunodeficiency gene panel",
+      "Pathogenic variant identified: BTK gene, hemizygous c.1684C>T, p.R562C (kinase domain, loss of function). Classified as pathogenic. Consistent with X-linked agammaglobulinaemia."
+    ]
+  },
+  {
+    "input": "ecg",
+    "output": [
+      "ECG",
+      "Normal sinus rhythm. No abnormality."
+    ]
+  },
+  {
+    "input": "ear",
+    "output": [
+      "ear swab",
+      "Streptococcus pneumoniae — moderate growth (consistent with acute otitis media)."
+    ]
+  },
+  {
+    "input": "urine",
+    "output": null
+  },
+  {
+    "input": "blood culture",
+    "output": [
+      "CBC / full blood count",
+      "WBC 6,200/µL (normal). Neutrophils 4,500/µL (normal). Lymphocytes 1,200/µL ↓ (low for age — reference 2,000–8,000). Monocytes normal. Haemoglobin 11.8 g/dL (mildly low). Platelets 320,000/µL (normal). MCV 78 fL (normal)."
+    ]
+  },
+  {
+    "input": "procalcitonin",
+    "output": [
+      "procalcitonin",
+      "Procalcitonin 2.8 ng/mL ↑↑ (elevated — consistent with bacterial infection)."
+    ]
+  },
+  {
+    "input": "a nonexistent test fragment",
+    "output": [
+      "HIV test",
+      "HIV 1/2 antibody: NEGATIVE."
+    ]
+  }
+]

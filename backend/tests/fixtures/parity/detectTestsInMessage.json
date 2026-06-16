@@ -1,0 +1,198 @@
+[
+  {
+    "input": "I would like to order a full blood count",
+    "output": [
+      "CBC"
+    ]
+  },
+  {
+    "input": "Please send bloods for CRP and ESR",
+    "output": [
+      "CRP",
+      "ESR"
+    ]
+  },
+  {
+    "input": "Can we get immunoglobulins please",
+    "output": [
+      "immunoglobulin"
+    ]
+  },
+  {
+    "input": "I'd like to request a chest x-ray",
+    "output": [
+      "chest X-ray"
+    ]
+  },
+  {
+    "input": "Let's do a lymphocyte subset panel",
+    "output": [
+      "lymphocyte subsets"
+    ]
+  },
+  {
+    "input": "order blood culture",
+    "output": [
+      "blood culture"
+    ]
+  },
+  {
+    "input": "cbc",
+    "output": [
+      "CBC"
+    ]
+  },
+  {
+    "input": "crp",
+    "output": [
+      "CRP"
+    ]
+  },
+  {
+    "input": "esr",
+    "output": [
+      "ESR"
+    ]
+  },
+  {
+    "input": "immunoglobulins igg iga igm",
+    "output": [
+      "immunoglobulin"
+    ]
+  },
+  {
+    "input": "flow cytometry",
+    "output": [
+      "lymphocyte subsets"
+    ]
+  },
+  {
+    "input": "lymphocyte subsets, flow cytometry",
+    "output": [
+      "lymphocyte subsets"
+    ]
+  },
+  {
+    "input": "adenoid xray",
+    "output": [
+      "lateral neck"
+    ]
+  },
+  {
+    "input": "lateral neck xray",
+    "output": [
+      "lateral neck"
+    ]
+  },
+  {
+    "input": "throat swab and ear swab",
+    "output": [
+      "throat",
+      "ear swab"
+    ]
+  },
+  {
+    "input": "echo",
+    "output": [
+      "echocardiogram"
+    ]
+  },
+  {
+    "input": "ecg",
+    "output": [
+      "echocardiogram"
+    ]
+  },
+  {
+    "input": "hiv test",
+    "output": [
+      "HIV"
+    ]
+  },
+  {
+    "input": "gene panel",
+    "output": [
+      "immunodeficiency gene panel"
+    ]
+  },
+  {
+    "input": "DHR oxidative burst",
+    "output": [
+      "DHR"
+    ]
+  },
+  {
+    "input": "How long has he been unwell?",
+    "output": []
+  },
+  {
+    "input": "What infections has he had?",
+    "output": []
+  },
+  {
+    "input": "Tell me about the family history",
+    "output": []
+  },
+  {
+    "input": "cbc, crp, esr, immunoglobulins, complement, hiv test, gene panel",
+    "output": [
+      "CBC",
+      "CRP",
+      "ESR",
+      "immunoglobulin",
+      "complement",
+      "HIV",
+      "immunodeficiency gene panel"
+    ]
+  },
+  {
+    "input": "abdo us",
+    "output": [
+      "abdominal"
+    ]
+  },
+  {
+    "input": "ct chest",
+    "output": [
+      "chest CT"
+    ]
+  },
+  {
+    "input": "biopsy",
+    "output": [
+      "skin biopsy"
+    ]
+  },
+  {
+    "input": "stool for giardia",
+    "output": [
+      "stool"
+    ]
+  },
+  {
+    "input": "I want to perform a skin prick test",
+    "output": []
+  },
+  {
+    "input": "we need to arrange an echocardiogram",
+    "output": [
+      "echocardiogram"
+    ]
+  },
+  {
+    "input": "Please order a CBC, CRP, ESR, immunoglobulins, complement, lymphocyte subsets, blood culture too",
+    "output": [
+      "CBC",
+      "CRP",
+      "ESR",
+      "immunoglobulin",
+      "complement",
+      "blood culture",
+      "lymphocyte subsets"
+    ]
+  },
+  {
+    "input": "nothing relevant here",
+    "output": []
+  }
+]

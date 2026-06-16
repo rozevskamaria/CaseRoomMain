@@ -1,0 +1,233 @@
+[
+  {
+    "input": {
+      "title": "A Boy Who Is Always Getting Pneumonia",
+      "targetDiagnosis": "X-linked Agammaglobulinaemia (XLA)",
+      "phase": "history",
+      "parentExchanges": 0,
+      "studentQuestions": "",
+      "orderedList": [],
+      "labDataKeys": [
+        "CBC / full blood count",
+        "CRP",
+        "ESR",
+        "procalcitonin",
+        "blood biochemistry",
+        "blood culture",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest X-ray",
+        "chest CT",
+        "abdominal ultrasound",
+        "immunoglobulins",
+        "complement / C3 C4",
+        "lymphocyte subsets / flow cytometry",
+        "vaccine antibody titres",
+        "stool examination",
+        "HIV test",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "keyClues": [
+        "Infections started at 6–7 months (after maternal IgG wanes)",
+        "Only bacterial infections — no fungi, no viruses",
+        "No tonsils on examination",
+        "Maternal uncle died of 'overwhelming pneumonia' at age 3",
+        "Absent B cells on flow cytometry",
+        "All immunoglobulins severely decreased"
+      ],
+      "hintsUsed": 1
+    },
+    "output": {
+      "notYetOrdered": [
+        "CBC / full blood count",
+        "CRP",
+        "ESR",
+        "procalcitonin",
+        "blood biochemistry",
+        "blood culture",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest X-ray",
+        "chest CT",
+        "abdominal ultrasound",
+        "immunoglobulins",
+        "complement / C3 C4",
+        "lymphocyte subsets / flow cytometry",
+        "vaccine antibody titres",
+        "stool examination",
+        "HIV test",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "importantMissing": [
+        "Infections started at 6–7 months (after maternal IgG wanes)",
+        "Only bacterial infections — no fungi, no viruses",
+        "No tonsils on examination",
+        "Maternal uncle died of 'overwhelming pneumonia' at age 3",
+        "Absent B cells on flow cytometry",
+        "All immunoglobulins severely decreased"
+      ],
+      "context": "CASE: A Boy Who Is Always Getting Pneumonia\nTARGET DIAGNOSIS: X-linked Agammaglobulinaemia (XLA)\nCURRENT PHASE: history\nPARENT EXCHANGES SO FAR: 0\nSTUDENT HAS ASKED ABOUT: nothing yet\nTESTS ORDERED SO FAR: none\nTESTS NOT YET ORDERED (available in this case): CBC / full blood count, CRP, ESR, procalcitonin, blood biochemistry, blood culture, urinalysis, throat swab\nKEY CLUES NOT YET FOUND: Infections started at 6–7 months (after maternal IgG wanes); Only bacterial infections — no fungi, no viruses; No tonsils on examination\nHINTS USED SO FAR: 1"
+    }
+  },
+  {
+    "input": {
+      "title": "A Boy Who Is Always Getting Pneumonia",
+      "targetDiagnosis": "X-linked Agammaglobulinaemia (XLA)",
+      "phase": "tests",
+      "parentExchanges": 4,
+      "studentQuestions": "How long has he been unwell? | Any family history of infections?",
+      "orderedList": [
+        "CBC",
+        "CRP",
+        "ESR"
+      ],
+      "labDataKeys": [
+        "CBC / full blood count",
+        "CRP",
+        "ESR",
+        "procalcitonin",
+        "blood biochemistry",
+        "blood culture",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest X-ray",
+        "chest CT",
+        "abdominal ultrasound",
+        "immunoglobulins",
+        "complement / C3 C4",
+        "lymphocyte subsets / flow cytometry",
+        "vaccine antibody titres",
+        "stool examination",
+        "HIV test",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "keyClues": [
+        "Infections started at 6–7 months (after maternal IgG wanes)",
+        "Only bacterial infections — no fungi, no viruses",
+        "No tonsils on examination",
+        "Maternal uncle died of 'overwhelming pneumonia' at age 3",
+        "Absent B cells on flow cytometry",
+        "All immunoglobulins severely decreased"
+      ],
+      "hintsUsed": 2
+    },
+    "output": {
+      "notYetOrdered": [
+        "procalcitonin",
+        "blood biochemistry",
+        "blood culture",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest X-ray",
+        "chest CT",
+        "abdominal ultrasound",
+        "immunoglobulins",
+        "complement / C3 C4",
+        "lymphocyte subsets / flow cytometry",
+        "vaccine antibody titres",
+        "stool examination",
+        "HIV test",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "importantMissing": [
+        "Only bacterial infections — no fungi, no viruses",
+        "No tonsils on examination",
+        "Maternal uncle died of 'overwhelming pneumonia' at age 3",
+        "Absent B cells on flow cytometry",
+        "All immunoglobulins severely decreased"
+      ],
+      "context": "CASE: A Boy Who Is Always Getting Pneumonia\nTARGET DIAGNOSIS: X-linked Agammaglobulinaemia (XLA)\nCURRENT PHASE: tests\nPARENT EXCHANGES SO FAR: 4\nSTUDENT HAS ASKED ABOUT: How long has he been unwell? | Any family history of infections?\nTESTS ORDERED SO FAR: CBC, CRP, ESR\nTESTS NOT YET ORDERED (available in this case): procalcitonin, blood biochemistry, blood culture, urinalysis, throat swab, ear swab, chest X-ray, chest CT\nKEY CLUES NOT YET FOUND: Only bacterial infections — no fungi, no viruses; No tonsils on examination; Maternal uncle died of 'overwhelming pneumonia' at age 3\nHINTS USED SO FAR: 2"
+    }
+  },
+  {
+    "input": {
+      "title": "A Boy Who Is Always Getting Pneumonia",
+      "targetDiagnosis": "X-linked Agammaglobulinaemia (XLA)",
+      "phase": "differential",
+      "parentExchanges": 7,
+      "studentQuestions": "Tell me about the tonsils | What about the maternal uncle who died?",
+      "orderedList": [
+        "immunoglobulins",
+        "lymphocyte subsets / flow cytometry",
+        "complement / C3 C4",
+        "chest X-ray",
+        "blood culture",
+        "CBC / full blood count",
+        "CRP",
+        "ESR",
+        "HIV test"
+      ],
+      "labDataKeys": [
+        "CBC / full blood count",
+        "CRP",
+        "ESR",
+        "procalcitonin",
+        "blood biochemistry",
+        "blood culture",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest X-ray",
+        "chest CT",
+        "abdominal ultrasound",
+        "immunoglobulins",
+        "complement / C3 C4",
+        "lymphocyte subsets / flow cytometry",
+        "vaccine antibody titres",
+        "stool examination",
+        "HIV test",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "keyClues": [
+        "Infections started at 6–7 months (after maternal IgG wanes)",
+        "Only bacterial infections — no fungi, no viruses",
+        "No tonsils on examination",
+        "Maternal uncle died of 'overwhelming pneumonia' at age 3",
+        "Absent B cells on flow cytometry",
+        "All immunoglobulins severely decreased"
+      ],
+      "hintsUsed": 3
+    },
+    "output": {
+      "notYetOrdered": [
+        "procalcitonin",
+        "blood biochemistry",
+        "urinalysis",
+        "throat swab",
+        "ear swab",
+        "chest CT",
+        "abdominal ultrasound",
+        "vaccine antibody titres",
+        "stool examination",
+        "ferritin",
+        "immunodeficiency gene panel",
+        "skin prick test / allergy test",
+        "ECG"
+      ],
+      "importantMissing": [
+        "Infections started at 6–7 months (after maternal IgG wanes)",
+        "Only bacterial infections — no fungi, no viruses"
+      ],
+      "context": "CASE: A Boy Who Is Always Getting Pneumonia\nTARGET DIAGNOSIS: X-linked Agammaglobulinaemia (XLA)\nCURRENT PHASE: differential\nPARENT EXCHANGES SO FAR: 7\nSTUDENT HAS ASKED ABOUT: Tell me about the tonsils | What about the maternal uncle who died?\nTESTS ORDERED SO FAR: immunoglobulins, lymphocyte subsets / flow cytometry, complement / C3 C4, chest X-ray, blood culture, CBC / full blood count, CRP, ESR, HIV test\nTESTS NOT YET ORDERED (available in this case): procalcitonin, blood biochemistry, urinalysis, throat swab, ear swab, chest CT, abdominal ultrasound, vaccine antibody titres\nKEY CLUES NOT YET FOUND: Infections started at 6–7 months (after maternal IgG wanes); Only bacterial infections — no fungi, no viruses\nHINTS USED SO FAR: 3"
+    }
+  }
+]

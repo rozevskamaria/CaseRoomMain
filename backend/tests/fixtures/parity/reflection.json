@@ -1,0 +1,21 @@
+[
+  {
+    "input": {
+      "kind": "REFLECTION_QS"
+    },
+    "output": [
+      "What was your initial diagnosis when you first heard the case opening?",
+      "Which specific finding or test result changed your thinking most significantly?",
+      "Was there a moment where you felt uncertain or stuck? What helped you move forward?",
+      "What would you do differently if you encountered this case again?",
+      "What is the single most important clinical or scientific concept you will take away from this case?"
+    ]
+  },
+  {
+    "input": {
+      "kind": "reflectionSummaryPrompt",
+      "case": "xla"
+    },
+    "output": "You are summarising a medical student's reflection on a clinical case: \"A Boy Who Is Always Getting Pneumonia\" (target diagnosis: X-linked Agammaglobulinaemia (XLA)). Write 3–4 supportive sentences summarising their reflective reasoning and identifying 1–2 key learning moments. Encourage continued reflection."
+  }
+]

@@ -1,0 +1,541 @@
+[
+  {
+    "input": "WBC 6,200/µL (normal). Neutrophils 4,500/µL (normal). Lymphocytes 1,200/µL ↓ (low for age — reference 2,000–8,000). Monocytes normal. Haemoglobin 11.8 g/dL (mildly low). Platelets 320,000/µL (normal). MCV 78 fL (normal).",
+    "output": [
+      {
+        "type": "row",
+        "param": "WBC",
+        "value": "6,200/µL (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Neutrophils",
+        "value": "4,500/µL (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Lymphocytes",
+        "value": "1,200/µL ↓ (low for age — reference 2,000–8,000)"
+      },
+      {
+        "type": "note",
+        "text": "Monocytes normal"
+      },
+      {
+        "type": "row",
+        "param": "Haemoglobin",
+        "value": "11.8 g/dL (mildly low)"
+      },
+      {
+        "type": "row",
+        "param": "Platelets",
+        "value": "320,000/µL (normal)"
+      },
+      {
+        "type": "row",
+        "param": "MCV",
+        "value": "78 fL (normal)"
+      }
+    ]
+  },
+  {
+    "input": "CRP 84 mg/L ↑ (elevated — active bacterial infection).",
+    "output": [
+      {
+        "type": "row",
+        "param": "CRP",
+        "value": "84 mg/L ↑ (elevated — active bacterial infection)"
+      }
+    ]
+  },
+  {
+    "input": "ESR 42 mm/hr ↑ (elevated).",
+    "output": [
+      {
+        "type": "row",
+        "param": "ESR",
+        "value": "42 mm/hr ↑ (elevated)"
+      }
+    ]
+  },
+  {
+    "input": "Procalcitonin 2.8 ng/mL ↑↑ (elevated — consistent with bacterial infection).",
+    "output": [
+      {
+        "type": "row",
+        "param": "Procalcitonin",
+        "value": "2.8 ng/mL ↑↑ (elevated — consistent with bacterial infection)"
+      }
+    ]
+  },
+  {
+    "input": "Sodium 137 mmol/L (normal). Potassium 4.1 mmol/L (normal). Urea 4.2 mmol/L (normal). Creatinine 28 µmol/L (normal for age). Glucose 4.8 mmol/L (normal). ALT 28 U/L (normal). AST 22 U/L (normal). Bilirubin 8 µmol/L (normal). ALP 145 U/L (normal for age). Albumin 28 g/L ↓ (low — chronic illness and malnutrition). Total protein 52 g/L ↓ (low — reflects absent immunoglobulin contribution).",
+    "output": [
+      {
+        "type": "row",
+        "param": "Sodium",
+        "value": "137 mmol/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Potassium",
+        "value": "4.1 mmol/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Urea",
+        "value": "4.2 mmol/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Creatinine",
+        "value": "28 µmol/L (normal for age)"
+      },
+      {
+        "type": "row",
+        "param": "Glucose",
+        "value": "4.8 mmol/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "ALT",
+        "value": "28 U/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "AST",
+        "value": "22 U/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Bilirubin",
+        "value": "8 µmol/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "ALP",
+        "value": "145 U/L (normal for age)"
+      },
+      {
+        "type": "row",
+        "param": "Albumin",
+        "value": "28 g/L ↓ (low — chronic illness and malnutrition)"
+      },
+      {
+        "type": "row",
+        "param": "Total protein",
+        "value": "52 g/L ↓ (low — reflects absent immunoglobulin contribution)"
+      }
+    ]
+  },
+  {
+    "input": "Streptococcus pneumoniae — POSITIVE (bacteraemia confirmed). Susceptible to penicillin.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Streptococcus pneumoniae — POSITIVE (bacteraemia confirmed)"
+      },
+      {
+        "type": "note",
+        "text": "Susceptible to penicillin"
+      }
+    ]
+  },
+  {
+    "input": "Colour: yellow, clear. pH 6.2. Specific gravity 1.018. Protein: negative. Glucose: negative. Blood: negative. Leucocytes: negative. Nitrites: negative. Ketones: trace. No significant growth on culture.",
+    "output": [
+      {
+        "type": "row",
+        "param": "Colour",
+        "value": "yellow, clear. pH 6.2"
+      },
+      {
+        "type": "row",
+        "param": "Specific gravity",
+        "value": "1.018"
+      },
+      {
+        "type": "row",
+        "param": "Protein",
+        "value": "negative"
+      },
+      {
+        "type": "row",
+        "param": "Glucose",
+        "value": "negative"
+      },
+      {
+        "type": "row",
+        "param": "Blood",
+        "value": "negative"
+      },
+      {
+        "type": "row",
+        "param": "Leucocytes",
+        "value": "negative"
+      },
+      {
+        "type": "row",
+        "param": "Nitrites",
+        "value": "negative"
+      },
+      {
+        "type": "row",
+        "param": "Ketones",
+        "value": "trace"
+      },
+      {
+        "type": "note",
+        "text": "No significant growth on culture"
+      }
+    ]
+  },
+  {
+    "input": "Haemophilus influenzae (non-typeable) — moderate growth.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Haemophilus influenzae (non-typeable) — moderate growth"
+      }
+    ]
+  },
+  {
+    "input": "Streptococcus pneumoniae — moderate growth (consistent with acute otitis media).",
+    "output": [
+      {
+        "type": "note",
+        "text": "Streptococcus pneumoniae — moderate growth (consistent with acute otitis media)"
+      }
+    ]
+  },
+  {
+    "input": "Bilateral lower lobe consolidation consistent with pneumonia. No pleural effusion. No cavitary lesion. No pneumatocele.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Bilateral lower lobe consolidation consistent with pneumonia"
+      },
+      {
+        "type": "note",
+        "text": "No pleural effusion"
+      },
+      {
+        "type": "note",
+        "text": "No cavitary lesion"
+      },
+      {
+        "type": "note",
+        "text": "No pneumatocele"
+      }
+    ]
+  },
+  {
+    "input": "Bilateral lower lobe consolidation. No pneumatocele or cavitary lesion. No bronchiectasis. Mildly prominent hilar nodes — reactive.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Bilateral lower lobe consolidation"
+      },
+      {
+        "type": "note",
+        "text": "No pneumatocele or cavitary lesion"
+      },
+      {
+        "type": "note",
+        "text": "No bronchiectasis"
+      },
+      {
+        "type": "note",
+        "text": "Mildly prominent hilar nodes — reactive"
+      }
+    ]
+  },
+  {
+    "input": "No hepatosplenomegaly. Normal-sized liver and spleen. No abdominal lymphadenopathy. Normal bowel.",
+    "output": [
+      {
+        "type": "note",
+        "text": "No hepatosplenomegaly"
+      },
+      {
+        "type": "note",
+        "text": "Normal-sized liver and spleen"
+      },
+      {
+        "type": "note",
+        "text": "No abdominal lymphadenopathy"
+      },
+      {
+        "type": "note",
+        "text": "Normal bowel"
+      }
+    ]
+  },
+  {
+    "input": "IgG: <100 mg/dL ↓↓↓ (severely decreased; normal for age >400 mg/dL). IgA: <5 mg/dL (UNDETECTABLE). IgM: <10 mg/dL ↓↓↓ (severely decreased). IgE: <2 IU/mL (absent). Total protein: 42 g/L ↓↓ (low — reflects absent immunoglobulin contribution).",
+    "output": [
+      {
+        "type": "row",
+        "param": "IgG",
+        "value": "<100 mg/dL ↓↓↓ (severely decreased; normal for age >400 mg/dL)"
+      },
+      {
+        "type": "row",
+        "param": "IgA",
+        "value": "<5 mg/dL (UNDETECTABLE)"
+      },
+      {
+        "type": "row",
+        "param": "IgM",
+        "value": "<10 mg/dL ↓↓↓ (severely decreased)"
+      },
+      {
+        "type": "row",
+        "param": "IgE",
+        "value": "<2 IU/mL (absent)"
+      },
+      {
+        "type": "row",
+        "param": "Total protein",
+        "value": "42 g/L ↓↓ (low — reflects absent immunoglobulin contribution)"
+      }
+    ]
+  },
+  {
+    "input": "C3: 1.4 g/L (normal). C4: 0.28 g/L (normal). CH50: normal.",
+    "output": [
+      {
+        "type": "row",
+        "param": "C3",
+        "value": "1.4 g/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "C4",
+        "value": "0.28 g/L (normal)"
+      },
+      {
+        "type": "row",
+        "param": "CH50",
+        "value": "normal"
+      }
+    ]
+  },
+  {
+    "input": "CD3+ T cells: Normal absolute count. CD4+ T cells: Normal. CD8+ T cells: Normal. CD19+ B cells: ABSENT (0.0%) ↓↓↓ — complete absence of B lymphocytes. NK cells: Normal. BTK protein expression on monocytes: ABSENT.",
+    "output": [
+      {
+        "type": "row",
+        "param": "CD3+ T cells",
+        "value": "Normal absolute count"
+      },
+      {
+        "type": "row",
+        "param": "CD4+ T cells",
+        "value": "Normal"
+      },
+      {
+        "type": "row",
+        "param": "CD8+ T cells",
+        "value": "Normal"
+      },
+      {
+        "type": "row",
+        "param": "CD19+ B cells",
+        "value": "ABSENT (0.0%) ↓↓↓ — complete absence of B lymphocytes"
+      },
+      {
+        "type": "row",
+        "param": "NK cells",
+        "value": "Normal"
+      },
+      {
+        "type": "row",
+        "param": "BTK protein expression on monocytes",
+        "value": "ABSENT"
+      }
+    ]
+  },
+  {
+    "input": "Anti-pneumococcal IgG: undetectable (<0.1 µg/mL). Anti-tetanus IgG: undetectable. Anti-Hib IgG: undetectable.",
+    "output": [
+      {
+        "type": "row",
+        "param": "Anti-pneumococcal IgG",
+        "value": "undetectable (<0.1 µg/mL)"
+      },
+      {
+        "type": "row",
+        "param": "Anti-tetanus IgG",
+        "value": "undetectable"
+      },
+      {
+        "type": "row",
+        "param": "Anti-Hib IgG",
+        "value": "undetectable"
+      }
+    ]
+  },
+  {
+    "input": "Giardia lamblia cysts: POSITIVE (moderate load). No other parasites. No bacterial pathogen isolated.",
+    "output": [
+      {
+        "type": "row",
+        "param": "Giardia lamblia cysts",
+        "value": "POSITIVE (moderate load)"
+      },
+      {
+        "type": "note",
+        "text": "No other parasites"
+      },
+      {
+        "type": "note",
+        "text": "No bacterial pathogen isolated"
+      }
+    ]
+  },
+  {
+    "input": "HIV 1/2 antibody: NEGATIVE.",
+    "output": [
+      {
+        "type": "row",
+        "param": "HIV 1/2 antibody",
+        "value": "NEGATIVE"
+      }
+    ]
+  },
+  {
+    "input": "Ferritin 18 ng/mL ↓ (low — consistent with iron deficiency from poor nutrition).",
+    "output": [
+      {
+        "type": "row",
+        "param": "Ferritin",
+        "value": "18 ng/mL ↓ (low — consistent with iron deficiency from poor nutrition)"
+      }
+    ]
+  },
+  {
+    "input": "Pathogenic variant identified: BTK gene, hemizygous c.1684C>T, p.R562C (kinase domain, loss of function). Classified as pathogenic. Consistent with X-linked agammaglobulinaemia.",
+    "output": [
+      {
+        "type": "row",
+        "param": "Pathogenic variant identified",
+        "value": "BTK gene, hemizygous c.1684C>T, p.R562C (kinase domain, loss of function)"
+      },
+      {
+        "type": "note",
+        "text": "Classified as pathogenic"
+      },
+      {
+        "type": "note",
+        "text": "Consistent with X-linked agammaglobulinaemia"
+      }
+    ]
+  },
+  {
+    "input": "Not performed.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Not performed"
+      }
+    ]
+  },
+  {
+    "input": "Normal sinus rhythm. No abnormality.",
+    "output": [
+      {
+        "type": "note",
+        "text": "Normal sinus rhythm"
+      },
+      {
+        "type": "note",
+        "text": "No abnormality"
+      }
+    ]
+  },
+  {
+    "input": "CRP 84 mg/L. NOTE: this is elevated",
+    "output": [
+      {
+        "type": "row",
+        "param": "CRP 84 mg/L\nNOTE",
+        "value": "this is elevated"
+      }
+    ]
+  },
+  {
+    "input": "WBC normal. ⚠ critical value flagged",
+    "output": [
+      {
+        "type": "note",
+        "text": "WBC normal\n⚠ critical value flagged"
+      }
+    ]
+  },
+  {
+    "input": "IgG very low. KEY: hallmark finding",
+    "output": [
+      {
+        "type": "row",
+        "param": "IgG very low\nKEY",
+        "value": "hallmark finding"
+      }
+    ]
+  },
+  {
+    "input": "IMPORTANT! escalate now",
+    "output": [
+      {
+        "type": "note",
+        "text": "escalate now"
+      }
+    ]
+  },
+  {
+    "input": "WARNING: contamination possible",
+    "output": [
+      {
+        "type": "note",
+        "text": "contamination possible"
+      }
+    ]
+  },
+  {
+    "input": "This is a very long descriptive parameter name that exceeds the sixty character colon threshold: value here",
+    "output": [
+      {
+        "type": "note",
+        "text": "This is a very long descriptive parameter name that exceeds the sixty character colon threshold: value here"
+      }
+    ]
+  },
+  {
+    "input": "Just a plain sentence with no match at all",
+    "output": [
+      {
+        "type": "note",
+        "text": "Just a plain sentence with no match at all"
+      }
+    ]
+  },
+  {
+    "input": "",
+    "output": []
+  },
+  {
+    "input": "WBC 6,200/µL (normal). Neutrophils 4,500/µL (normal)",
+    "output": [
+      {
+        "type": "row",
+        "param": "WBC",
+        "value": "6,200/µL (normal)"
+      },
+      {
+        "type": "row",
+        "param": "Neutrophils",
+        "value": "4,500/µL (normal)"
+      }
+    ]
+  }
+]
