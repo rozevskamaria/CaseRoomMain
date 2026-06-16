@@ -450,6 +450,10 @@ class SessionService:
         session.interp_result = ""
         session.phase = "tests"
 
+    def go_to_reflection(self, session: Session) -> None:
+        session.mode = "reflection"
+        session.phase = "reflection"
+
     def set_summary(self, session: Session, value: str) -> None:
         session.summary = value
 

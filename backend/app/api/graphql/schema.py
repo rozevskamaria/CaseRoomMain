@@ -374,6 +374,12 @@ class Mutation:
         get_session_service().go_to_tests(session)
         return _session_type(session)
 
+    @strawberry.mutation
+    def reflect(self, session_id: str) -> SessionType:
+        session = _require_session(session_id)
+        get_session_service().go_to_reflection(session)
+        return _session_type(session)
+
 
 schema = strawberry.Schema(query=Query, mutation=Mutation)
 
