@@ -1,0 +1,261 @@
+.root {
+  font-family: var(--font-serif);
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.welcome {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.logo {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+.heroTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+
+.heroSub {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--teal);
+  margin-bottom: 16px;
+}
+
+.intro {
+  font-size: 15.5px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 28px;
+}
+
+.cardHeading {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.stepRow {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 11px;
+}
+
+.stepNumber {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.stepText {
+  font-size: 14px;
+  color: var(--text-light);
+  line-height: 1.6;
+}
+
+.modeBlock {
+  margin-bottom: 28px;
+}
+
+.modeCard {
+  padding: 20px 24px;
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--surface);
+  margin-bottom: 10px;
+  transition: all 0.15s;
+}
+
+.modeCardActive {
+  border: 2px solid var(--navy);
+  background: var(--navy-pale);
+}
+
+.modeCardInner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.modeRadio {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--navy);
+  background: transparent;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.modeRadioActive {
+  background: var(--navy);
+}
+
+.modeLabel {
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--navy);
+}
+
+.modeDesc {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 3px;
+  line-height: 1.5;
+}
+
+.progress {
+  background: var(--navy-pale);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.progressLabel {
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 600;
+}
+
+.progressCount {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.pips {
+  display: flex;
+  gap: 5px;
+  margin-top: 6px;
+}
+
+.pip {
+  width: 28px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.pipSeen {
+  background: var(--teal);
+}
+
+.cta {
+  width: 100%;
+  padding: 16px 24px;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  margin-bottom: 14px;
+  font-family: var(--font-serif);
+}
+
+.ctaDone {
+  background: var(--border);
+  color: var(--dim);
+  cursor: default;
+}
+
+.browseToggleWrap {
+  text-align: center;
+}
+
+.browseList {
+  margin-top: 16px;
+}
+
+.browseNote {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.caseCard {
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--surface);
+  margin-bottom: 10px;
+  transition: all 0.15s;
+}
+
+.caseCardSeen {
+  opacity: 0.6;
+}
+
+.caseCardTop {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.caseTitle {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--navy);
+  margin-bottom: 2px;
+}
+
+.caseMeta {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.caseTags {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.seenBadge {
+  font-size: 11px;
+  color: var(--teal);
+  font-weight: 600;
+}

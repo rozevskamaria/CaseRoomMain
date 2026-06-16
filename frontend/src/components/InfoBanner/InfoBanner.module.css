@@ -1,0 +1,30 @@
+.banner {
+  padding: 10px 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.teal {
+  background: var(--teal-pale);
+  border-top: 1px solid var(--teal);
+}
+
+.navy {
+  background: var(--navy-pale);
+  border-top: 1px solid var(--border);
+}
+
+.message {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.teal .message {
+  color: var(--teal);
+}
+
+.navy .message {
+  color: var(--navy);
+}

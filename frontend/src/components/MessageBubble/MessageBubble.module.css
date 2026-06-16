@@ -1,0 +1,80 @@
+.row {
+  display: flex;
+}
+
+.alignStart {
+  justify-content: flex-start;
+}
+
+.alignEnd {
+  justify-content: flex-end;
+}
+
+.bubble {
+  border-radius: 12px 12px 12px 4px;
+  padding: 10px 14px;
+}
+
+.student {
+  border-radius: 12px 12px 4px 12px;
+}
+
+.parent {
+  background: var(--parent-bg);
+  border: 1px solid var(--parent-border);
+  color: var(--parent);
+  max-width: 75%;
+}
+
+.tutor {
+  background: var(--tutor-bg);
+  border: 1px solid var(--tutor-border);
+  color: var(--tutor);
+  max-width: 82%;
+}
+
+.safety {
+  background: var(--safety-bg);
+  border: 1px solid var(--safety-border);
+  color: var(--safety);
+  max-width: 85%;
+}
+
+.studentBubble {
+  background: var(--student-bg);
+  border: 1px solid var(--student-border);
+  color: var(--student);
+  max-width: 72%;
+}
+
+.system {
+  background: var(--surface-alt);
+  border: 1px solid var(--border-dark);
+  color: var(--text-light);
+  max-width: 90%;
+}
+
+.label {
+  font-size: 10.5px;
+  font-weight: 700;
+  opacity: 0.7;
+  margin-bottom: 4px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.body {
+  font-size: 14.5px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+}
+
+.labNote {
+  padding: 9px 12px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-light);
+  margin-bottom: 10px;
+}

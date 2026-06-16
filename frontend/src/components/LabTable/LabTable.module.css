@@ -1,0 +1,40 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.headRow {
+  background: #F5F8FC;
+}
+
+.th {
+  padding: 5px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #5A6A80;
+  text-align: left;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #D8E4EE;
+}
+
+.thParam {
+  width: 42%;
+}
+
+.paramCell {
+  padding: 7px 12px;
+  font-size: 13px;
+  color: #2A3A4A;
+  font-weight: 500;
+  border-right: 1px solid #D8E4EE;
+  vertical-align: top;
+  line-height: 1.5;
+}
+
+.valueCell {
+  padding: 7px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  vertical-align: top;
+}

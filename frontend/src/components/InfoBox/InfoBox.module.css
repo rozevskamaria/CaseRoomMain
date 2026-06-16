@@ -1,0 +1,35 @@
+.outerTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+
+.surfaceBox {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--text-light);
+}
+
+.navyPaleBox {
+  background: var(--navy-pale);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.innerTitle {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--navy);
+  margin-bottom: 3px;
+}
+
+.innerText {
+  font-size: 13.5px;
+  color: var(--text-light);
+}

@@ -226,3 +226,11 @@ export const OrderInvestigationsMutation = graphql(`
     }
   }
 `);
+
+export const ReflectMutation = graphql(`
+  mutation Reflect($sessionId: String!) {
+    reflect(sessionId: $sessionId) {
+      ...SessionFields
+    }
+  }
+`);

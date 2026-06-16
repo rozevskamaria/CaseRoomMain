@@ -69,6 +69,7 @@ type Mutation {
   interpretResults(sessionId: String!, prompt: String!): SessionType!
   submitFinal(sessionId: String!, prompt: String!): SessionType!
   orderInvestigations(sessionId: String!): SessionType!
+  reflect(sessionId: String!): SessionType!
 }
 
 type Query {

@@ -480,6 +480,17 @@ def test_button_transition_go_to_summary():
     assert session.messages[-1].text == "Please write a clinical summary."
 
 
+def test_button_transition_go_to_reflection():
+    service, _ = make_service()
+    session = service.start_case("xla", "practice")
+    session.phase = "feedback"
+
+    service.go_to_reflection(session)
+
+    assert session.phase == "reflection"
+    assert session.mode == "reflection"
+
+
 def test_button_transition_go_to_differential():
     service, _ = make_service()
     session = service.start_case("xla", "practice")

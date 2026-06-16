@@ -1,0 +1,32 @@
+.phaseBar {
+  display: flex;
+  gap: 0;
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  flex-shrink: 0;
+}
+
+.phaseItem {
+  padding: 7px 14px;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  cursor: default;
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--dim);
+  font-weight: 400;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.done {
+  cursor: pointer;
+  color: var(--teal);
+}
+
+.active {
+  background: var(--navy);
+  color: #fff;
+  font-weight: 600;
+}

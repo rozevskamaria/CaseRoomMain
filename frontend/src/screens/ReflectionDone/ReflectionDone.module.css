@@ -1,0 +1,30 @@
+.root {
+  font-family: var(--font-serif);
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.inner {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.heading {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 24px;
+}
+
+.tutorBox {
+  background: var(--tutor-bg);
+  border: 1px solid var(--tutor-border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--tutor);
+  margin-bottom: 24px;
+}

@@ -1,0 +1,24 @@
+.row {
+  display: flex;
+  gap: 8px;
+}
+
+.textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 9px 12px;
+  font-size: 15px;
+  font-family: 'Crimson Pro', Georgia, serif;
+  color: var(--text);
+  background: var(--surface);
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.send {
+  align-self: flex-end;
+  padding: 10px 18px;
+}
