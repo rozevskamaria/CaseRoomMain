@@ -1,0 +1,119 @@
+type CaseType {
+  id: String!
+  title: String!
+  topic: String!
+  patient: String!
+  difficulty: String!
+  openingClinical: String!
+  opening: String!
+  targetDiagnosis: String!
+  targetIuis: String!
+}
+
+type FeedbackType {
+  diagnosticAccuracy: String!
+  diagnosticComment: String!
+  wellDone: [String!]!
+  missing: [String!]!
+  keyClues: [String!]!
+  reasoningPathway: String!
+  managementPoints: [String!]!
+  geneticPoints: [String!]!
+  revisionTopic: String!
+  scores: ScoresType
+}
+
+input FinalAnswerInput {
+  diagnosis: String! = ""
+  findings: String! = ""
+  differentials: String! = ""
+  tests: String! = ""
+  management: String! = ""
+  genetics: String! = ""
+  explanation: String! = ""
+}
+
+type FinalAnswerType {
+  diagnosis: String!
+  findings: String!
+  differentials: String!
+  tests: String!
+  management: String!
+  genetics: String!
+  explanation: String!
+}
+
+type MessageType {
+  id: String!
+  type: String!
+  text: String!
+}
+
+type Mutation {
+  startCase(caseId: String!, mode: String!): SessionType!
+  sendMessage(sessionId: String!, text: String!): SendMessageResult!
+  requestExam(sessionId: String!): SessionType!
+  sendTestOrder(sessionId: String!, text: String!): SessionType!
+  setSummary(sessionId: String!, value: String!): SessionType!
+  submitSummary(sessionId: String!): SessionType!
+  setDifferentials(sessionId: String!, value: String!): SessionType!
+  submitDifferentials(sessionId: String!): SessionType!
+  setInterpretation(sessionId: String!, value: String!): SessionType!
+  submitInterpretation(sessionId: String!): SessionType!
+  setFinalAnswerField(sessionId: String!, fieldName: String!, value: String!): SessionType!
+  submitFinalAnswer(sessionId: String!, answer: FinalAnswerInput = null): SessionType!
+  requestHint(sessionId: String!): String!
+  submitReflection(sessionId: String!, text: String!): SessionType!
+  goToSummary(sessionId: String!, prompt: String!): SessionType!
+  proposeDifferentials(sessionId: String!, prompt: String!): SessionType!
+  interpretResults(sessionId: String!, prompt: String!): SessionType!
+  submitFinal(sessionId: String!, prompt: String!): SessionType!
+  orderInvestigations(sessionId: String!): SessionType!
+  reflect(sessionId: String!): SessionType!
+}
+
+type Query {
+  ping: String!
+  version: String!
+  health: String!
+  case(id: String!): CaseType
+  session(id: String!): SessionType
+}
+
+type ScoresType {
+  historyTaking: String!
+  examination: String!
+  differential: String!
+  testSelection: String!
+  interpretation: String!
+  management: String!
+}
+
+enum SendBranch {
+  SCID
+  TESTS
+  PARENT
+}
+
+type SendMessageResult {
+  session: SessionType!
+  branch: SendBranch!
+}
+
+type SessionType {
+  id: String!
+  caseId: String!
+  mode: String!
+  phase: String!
+  hintsUsed: Int!
+  examDone: Boolean!
+  summary: String!
+  differentials: String!
+  interpText: String!
+  interpResult: String!
+  reflectionStep: Int!
+  orderedTests: [String!]!
+  messages: [MessageType!]!
+  finalAnswer: FinalAnswerType!
+  feedback: FeedbackType
+}

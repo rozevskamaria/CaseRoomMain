@@ -1,0 +1,81 @@
+.heading {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.headingSmall {
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.headingTeal {
+  color: var(--teal);
+}
+
+.headingAmber {
+  color: var(--amber);
+}
+
+.headingNavy {
+  color: var(--navy);
+}
+
+.strip {
+  padding: 6px 10px;
+  margin-bottom: 5px;
+  border-radius: 0 6px 6px 0;
+  font-size: 13.5px;
+  color: var(--text-light);
+  border-left: 3px solid;
+}
+
+.strip.accentTeal {
+  background: var(--teal-pale);
+  border-left-color: var(--teal);
+}
+
+.strip.accentAmber {
+  background: var(--amber-pale);
+  border-left-color: var(--amber);
+}
+
+.box {
+  background: var(--navy-pale);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+.boxedBullet {
+  font-size: 13.5px;
+  color: var(--text-light);
+  margin-bottom: 3px;
+  padding-left: 10px;
+  border-left: 2px solid;
+}
+
+.bareBullet {
+  font-size: 13px;
+  color: var(--text-light);
+  margin-bottom: 5px;
+  padding-left: 8px;
+  border-left: 2px solid;
+}
+
+.accentNavy {
+  border-left-color: var(--navy);
+}
+
+.accentNavyLight {
+  border-left-color: var(--navy-light);
+}
+
+.accentTeal {
+  border-left-color: var(--teal);
+}
+
+.accentAmber {
+  border-left-color: var(--amber);
+}

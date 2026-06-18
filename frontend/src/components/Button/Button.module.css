@@ -1,0 +1,31 @@
+.button {
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.primary {
+  padding: 8px 18px;
+  background: var(--navy);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.secondary {
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--navy);
+  border: 1px solid var(--navy);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+
+.ghost {
+  padding: 7px 14px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+  font-size: 12.5px;
+}

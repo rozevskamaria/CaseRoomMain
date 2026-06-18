@@ -1,0 +1,43 @@
+.wrap {
+  margin-bottom: 14px;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #C8D8E8;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.header {
+  background: #EDF2F8;
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid #C8D8E8;
+}
+
+.icon {
+  font-size: 13px;
+}
+
+.title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1A2B4A;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.textBlock {
+  padding: 10px 14px;
+}
+
+.textLine {
+  font-size: 13px;
+  color: #2A3A4A;
+  line-height: 1.6;
+  margin-bottom: 2px;
+}

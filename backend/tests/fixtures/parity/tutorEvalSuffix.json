@@ -1,0 +1,20 @@
+[
+  {
+    "input": {
+      "phase": "summary"
+    },
+    "output": "Evaluate this clinical summary from a medical student (3–4 sentences, encouraging, identify what's good and what's missing)."
+  },
+  {
+    "input": {
+      "phase": "differential"
+    },
+    "output": "Evaluate these differentials from a medical student. Be encouraging, guide without giving away the answer. 3–5 sentences."
+  },
+  {
+    "input": {
+      "phase": "interpretation"
+    },
+    "output": "Evaluate this test interpretation from a medical student. Highlight what is correct and gently redirect any errors. End with a brief question that nudges them toward the next step. 3–5 sentences. Warm and constructive."
+  }
+]

@@ -1,0 +1,33 @@
+.row {
+  display: flex;
+}
+
+.bubble {
+  background: var(--parent-bg);
+  border: 1px solid var(--parent-border);
+  border-radius: 12px 12px 12px 4px;
+  padding: 10px 14px;
+}
+
+.label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--parent);
+  opacity: 0.7;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.body {
+  font-size: 14.5px;
+  color: var(--parent);
+  opacity: 0.5;
+}
+
+.centered {
+  text-align: center;
+  padding: 32px 0;
+  color: var(--muted);
+  font-size: 14px;
+}

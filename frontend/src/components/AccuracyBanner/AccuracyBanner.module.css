@@ -1,0 +1,44 @@
+.banner {
+  border-radius: 8px;
+  padding: 14px 18px;
+  margin-bottom: 16px;
+  border: 1px solid;
+}
+
+.correct {
+  background: var(--teal-pale);
+  border-color: var(--teal);
+}
+
+.partial {
+  background: var(--amber-pale);
+  border-color: var(--amber);
+}
+
+.incorrect {
+  background: var(--red-pale);
+  border-color: var(--red);
+}
+
+.headline {
+  font-weight: 700;
+  font-size: 15px;
+  margin-bottom: 4px;
+}
+
+.correct .headline {
+  color: var(--teal);
+}
+
+.partial .headline {
+  color: var(--amber);
+}
+
+.incorrect .headline {
+  color: var(--red);
+}
+
+.comment {
+  font-size: 14px;
+  color: var(--text-light);
+}

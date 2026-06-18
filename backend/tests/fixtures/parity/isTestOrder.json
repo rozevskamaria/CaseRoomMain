@@ -1,0 +1,130 @@
+[
+  {
+    "input": "I would like to order a full blood count",
+    "output": true
+  },
+  {
+    "input": "Please send bloods for CRP and ESR",
+    "output": true
+  },
+  {
+    "input": "Can we get immunoglobulins please",
+    "output": true
+  },
+  {
+    "input": "I'd like to request a chest x-ray",
+    "output": true
+  },
+  {
+    "input": "Let's do a lymphocyte subset panel",
+    "output": true
+  },
+  {
+    "input": "order blood culture",
+    "output": true
+  },
+  {
+    "input": "cbc",
+    "output": true
+  },
+  {
+    "input": "crp",
+    "output": true
+  },
+  {
+    "input": "esr",
+    "output": true
+  },
+  {
+    "input": "immunoglobulins igg iga igm",
+    "output": true
+  },
+  {
+    "input": "flow cytometry",
+    "output": true
+  },
+  {
+    "input": "lymphocyte subsets, flow cytometry",
+    "output": true
+  },
+  {
+    "input": "adenoid xray",
+    "output": true
+  },
+  {
+    "input": "lateral neck xray",
+    "output": true
+  },
+  {
+    "input": "throat swab and ear swab",
+    "output": true
+  },
+  {
+    "input": "echo",
+    "output": true
+  },
+  {
+    "input": "ecg",
+    "output": true
+  },
+  {
+    "input": "hiv test",
+    "output": true
+  },
+  {
+    "input": "gene panel",
+    "output": true
+  },
+  {
+    "input": "DHR oxidative burst",
+    "output": true
+  },
+  {
+    "input": "How long has he been unwell?",
+    "output": false
+  },
+  {
+    "input": "What infections has he had?",
+    "output": false
+  },
+  {
+    "input": "Tell me about the family history",
+    "output": false
+  },
+  {
+    "input": "cbc, crp, esr, immunoglobulins, complement, hiv test, gene panel",
+    "output": true
+  },
+  {
+    "input": "abdo us",
+    "output": true
+  },
+  {
+    "input": "ct chest",
+    "output": true
+  },
+  {
+    "input": "biopsy",
+    "output": true
+  },
+  {
+    "input": "stool for giardia",
+    "output": true
+  },
+  {
+    "input": "I want to perform a skin prick test",
+    "output": false
+  },
+  {
+    "input": "we need to arrange an echocardiogram",
+    "output": true
+  },
+  {
+    "input": "Please order a CBC, CRP, ESR, immunoglobulins, complement, lymphocyte subsets, blood culture too",
+    "output": true
+  },
+  {
+    "input": "nothing relevant here",
+    "output": false
+  }
+]

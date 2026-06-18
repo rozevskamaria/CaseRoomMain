@@ -1,0 +1,27 @@
+.emptyState {
+  text-align: center;
+  max-width: var(--empty-max-width, 440px);
+  margin: var(--empty-margin, 64px auto 0);
+}
+
+.icon {
+  font-size: 44px;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: var(--empty-title-size, 16px);
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 10px;
+}
+
+.description {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.75;
+}
+
+.action {
+  margin-top: 28px;
+}

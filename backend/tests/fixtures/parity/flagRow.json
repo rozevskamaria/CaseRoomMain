@@ -1,0 +1,294 @@
+[
+  {
+    "input": "6,200/µL (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "4,500/µL (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "1,200/µL ↓ (low for age — reference 2,000–8,000)",
+    "output": "lo"
+  },
+  {
+    "input": "11.8 g/dL (mildly low)",
+    "output": "lo"
+  },
+  {
+    "input": "320,000/µL (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "78 fL (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "84 mg/L ↑ (elevated — active bacterial infection)",
+    "output": "hi"
+  },
+  {
+    "input": "42 mm/hr ↑ (elevated)",
+    "output": "hi"
+  },
+  {
+    "input": "2.8 ng/mL ↑↑ (elevated — consistent with bacterial infection)",
+    "output": "hi2"
+  },
+  {
+    "input": "137 mmol/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "4.1 mmol/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "4.2 mmol/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "28 µmol/L (normal for age)",
+    "output": "ok"
+  },
+  {
+    "input": "4.8 mmol/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "28 U/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "22 U/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "8 µmol/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "145 U/L (normal for age)",
+    "output": "ok"
+  },
+  {
+    "input": "28 g/L ↓ (low — chronic illness and malnutrition)",
+    "output": "lo"
+  },
+  {
+    "input": "52 g/L ↓ (low — reflects absent immunoglobulin contribution)",
+    "output": "absent"
+  },
+  {
+    "input": "yellow, clear. pH 6.2",
+    "output": "lo"
+  },
+  {
+    "input": "1.018",
+    "output": "neutral"
+  },
+  {
+    "input": "negative",
+    "output": "ok"
+  },
+  {
+    "input": "trace",
+    "output": "neutral"
+  },
+  {
+    "input": "<100 mg/dL ↓↓↓ (severely decreased; normal for age >400 mg/dL)",
+    "output": "lo3"
+  },
+  {
+    "input": "<5 mg/dL (UNDETECTABLE)",
+    "output": "absent"
+  },
+  {
+    "input": "<10 mg/dL ↓↓↓ (severely decreased)",
+    "output": "lo3"
+  },
+  {
+    "input": "<2 IU/mL (absent)",
+    "output": "absent"
+  },
+  {
+    "input": "42 g/L ↓↓ (low — reflects absent immunoglobulin contribution)",
+    "output": "absent"
+  },
+  {
+    "input": "1.4 g/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "0.28 g/L (normal)",
+    "output": "ok"
+  },
+  {
+    "input": "normal",
+    "output": "ok"
+  },
+  {
+    "input": "Normal absolute count",
+    "output": "ok"
+  },
+  {
+    "input": "Normal",
+    "output": "ok"
+  },
+  {
+    "input": "ABSENT (0.0%) ↓↓↓ — complete absence of B lymphocytes",
+    "output": "absent"
+  },
+  {
+    "input": "ABSENT",
+    "output": "absent"
+  },
+  {
+    "input": "undetectable (<0.1 µg/mL)",
+    "output": "absent"
+  },
+  {
+    "input": "undetectable",
+    "output": "absent"
+  },
+  {
+    "input": "POSITIVE (moderate load)",
+    "output": "hi"
+  },
+  {
+    "input": "NEGATIVE",
+    "output": "ok"
+  },
+  {
+    "input": "18 ng/mL ↓ (low — consistent with iron deficiency from poor nutrition)",
+    "output": "lo"
+  },
+  {
+    "input": "BTK gene, hemizygous c.1684C>T, p.R562C (kinase domain, loss of function)",
+    "output": "neutral"
+  },
+  {
+    "input": "Procalcitonin 2.8 ng/mL ↑↑ (elevated)",
+    "output": "hi2"
+  },
+  {
+    "input": "CRITICALLY elevated marker",
+    "output": "crit"
+  },
+  {
+    "input": "MARKEDLY ELEVATED enzyme",
+    "output": "hi2"
+  },
+  {
+    "input": "ELEVATED CRP",
+    "output": "hi"
+  },
+  {
+    "input": "HIGH count",
+    "output": "hi"
+  },
+  {
+    "input": "POSITIVE for Streptococcus",
+    "output": "neutral"
+  },
+  {
+    "input": "POSITIVE (bacteraemia confirmed)",
+    "output": "hi"
+  },
+  {
+    "input": "RAISED inflammatory marker",
+    "output": "hi"
+  },
+  {
+    "input": "ABSENT B cells",
+    "output": "absent"
+  },
+  {
+    "input": "UNDETECTABLE IgA",
+    "output": "absent"
+  },
+  {
+    "input": "B cells 0.0%",
+    "output": "absent"
+  },
+  {
+    "input": "VIRTUALLY ABSENT response",
+    "output": "absent"
+  },
+  {
+    "input": "DIAGNOSTIC pattern",
+    "output": "diag"
+  },
+  {
+    "input": "PATHOGNOMONIC finding",
+    "output": "diag"
+  },
+  {
+    "input": "↓↓↓ severely decreased",
+    "output": "lo3"
+  },
+  {
+    "input": "SEVERELY LOW count",
+    "output": "lo3"
+  },
+  {
+    "input": "SEVERELY DECREASED level",
+    "output": "lo3"
+  },
+  {
+    "input": "CRITICALLY LOW value",
+    "output": "crit"
+  },
+  {
+    "input": "MARKEDLY LOW value",
+    "output": "lo2"
+  },
+  {
+    "input": "MARKEDLY DECREASED value",
+    "output": "lo2"
+  },
+  {
+    "input": "LOW for age",
+    "output": "lo"
+  },
+  {
+    "input": "DECREASED level",
+    "output": "lo"
+  },
+  {
+    "input": "BELOW REFERENCE range",
+    "output": "lo"
+  },
+  {
+    "input": "NORMAL result",
+    "output": "ok"
+  },
+  {
+    "input": "NEGATIVE serology",
+    "output": "ok"
+  },
+  {
+    "input": "NO GROWTH on culture",
+    "output": "ok"
+  },
+  {
+    "input": "NO PATHOGEN isolated",
+    "output": "ok"
+  },
+  {
+    "input": "NO SIGNIFICANT growth",
+    "output": "ok"
+  },
+  {
+    "input": "INTACT response",
+    "output": "ok"
+  },
+  {
+    "input": "PRESENT AND NORMAL architecture",
+    "output": "ok"
+  },
+  {
+    "input": "something completely unremarkable text",
+    "output": "neutral"
+  }
+]
