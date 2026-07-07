@@ -22,6 +22,7 @@ export function makeSession(overrides: Partial<Session> = {}): Session {
     caseId: "xla",
     phase: "history",
     mode: "practice",
+    language: "en",
     hintsUsed: 0,
     examDone: false,
     summary: "",

@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../Button";
 import styles from "./HintDropdown.module.css";
 
@@ -17,25 +18,23 @@ export function HintDropdown({
   style,
   className,
 }: HintDropdownProps) {
+  const { t } = useTranslation();
   if (!open) return null;
   const classes = [styles.panel, className].filter(Boolean).join(" ");
   return (
     <div className={classes} style={style}>
-      <div className={styles.title}>Ask for guidance</div>
-      <div className={styles.desc}>
-        The hint is personalised — it looks at what you have already asked and
-        ordered, and points toward what might be missing.
-      </div>
+      <div className={styles.title}>{t("hint.dropdownTitle")}</div>
+      <div className={styles.desc}>{t("hint.dropdownDesc")}</div>
       <Button
         variant="primary"
         style={{ width: "100%", fontSize: 13 }}
         onClick={onGetHint}
       >
-        Get a contextual hint →
+        {t("hint.getHint")}
       </Button>
       {hintsUsed > 0 && (
         <div className={styles.usedCount}>
-          {hintsUsed} hint{hintsUsed > 1 ? "s" : ""} used this case
+          {t("hint.usedCount", { count: hintsUsed })}
         </div>
       )}
     </div>

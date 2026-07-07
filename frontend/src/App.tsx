@@ -17,14 +17,17 @@ import {
   SetFinalAnswerFieldMutation,
   SetInterpretationMutation,
   SetSummaryMutation,
-  StartCaseMutation,
+  StartCaseLocalizedMutation,
   SubmitDifferentialsMutation,
   SubmitFinalMutation,
   SubmitInterpretationMutation,
   SubmitReflectionMutation,
   SubmitSummaryMutation,
 } from "./graphql/operations";
+import { LogoutMutation } from "./graphql/authOperations";
 import { useParentStream } from "./lib/useParentStream";
+import { useLocale } from "./i18n/useLocale";
+import type { Locale } from "./i18n/types";
 import { ChatScreen } from "./screens/ChatScreen";
 import { ReflectionDone } from "./screens/ReflectionDone";
 import { WelcomeScreen } from "./screens/WelcomeScreen";
@@ -57,8 +60,13 @@ function streamingMessage(text: string): SessionMessage {
   return { __typename: "MessageType", id: "__streaming__", type: "parent", text };
 }
 
-export default function App() {
+export interface AppProps {
+  onLogout?: () => void;
+}
+
+export default function App({ onLogout }: AppProps = {}) {
   const [ui, dispatch] = useReducer(uiReducer, undefined, createInitialUiState);
+  const { setLocale } = useLocale();
   const [input, setInput] = useState("");
   const [streamText, setStreamText] = useState<string | null>(null);
   const sessionIdRef = useRef<string | null>(null);
@@ -81,7 +89,7 @@ export default function App() {
     await sessionQuery.refetch({ id: sessionIdRef.current });
   }, [sessionQuery]);
 
-  const [startCase] = useMutation(StartCaseMutation);
+  const [startCase] = useMutation(StartCaseLocalizedMutation);
   const [sendMessage] = useMutation(SendMessageMutation);
   const [sendTestOrder] = useMutation(SendTestOrderMutation);
   const [requestExam] = useMutation(RequestExamMutation);
@@ -100,6 +108,7 @@ export default function App() {
   const [interpretResults] = useMutation(InterpretResultsMutation);
   const [orderInvestigations] = useMutation(OrderInvestigationsMutation);
   const [reflect] = useMutation(ReflectMutation);
+  const [logout] = useMutation(LogoutMutation);
 
   const parentStream = useParentStream({
     onChunk: (accumulated) => setStreamText(accumulated),
@@ -131,8 +140,10 @@ export default function App() {
     (caseId: string, markSeen: boolean) => {
       void runAsync(async () => {
         if (markSeen) dispatch({ type: "MARK_CASE_SEEN", caseId });
-        const result = await startCase({ variables: { caseId, mode: ui.mode } });
-        const started = result.data?.startCase;
+        const result = await startCase({
+          variables: { caseId, mode: ui.mode, language: ui.language },
+        });
+        const started = result.data?.startCaseLocalized;
         dispatch({
           type: "START_CASE",
           caseId,
@@ -141,7 +152,15 @@ export default function App() {
         setInput("");
       });
     },
-    [runAsync, startCase, ui.mode],
+    [runAsync, startCase, ui.language, ui.mode],
+  );
+
+  const onSetLanguage = useCallback(
+    (language: Locale) => {
+      dispatch({ type: "SET_LANGUAGE", language });
+      setLocale(language);
+    },
+    [setLocale],
   );
 
   const onStartRandom = useCallback(() => {
@@ -357,6 +376,13 @@ export default function App() {
     });
   }, [reflect, refetchSession, runAsync, ui.sessionId]);
 
+  const handleLogout = useCallback(() => {
+    parentStream.close();
+    void logout().finally(() => {
+      onLogout?.();
+    });
+  }, [logout, onLogout, parentStream]);
+
   useEffect(() => () => parentStream.close(), [parentStream]);
 
   const chatUi: ChatUi = useMemo(
@@ -444,16 +470,19 @@ export default function App() {
     return (
       <WelcomeScreen
         mode={ui.mode}
+        language={ui.language}
         seenCases={ui.seenCases}
         allDone={allDone}
         showBrowse={ui.showBrowse}
         onSetMode={(mode) => dispatch({ type: "SET_MODE", mode })}
+        onSetLanguage={onSetLanguage}
         onStartRandom={onStartRandom}
         onStartCase={(caseId) => onStartCase(caseId, false)}
         onToggleBrowse={() =>
           dispatch({ type: "SET_SHOW_BROWSE", value: !ui.showBrowse })
         }
         onResetProgress={() => dispatch({ type: "RESET_PROGRESS" })}
+        onLogout={onLogout ? handleLogout : undefined}
       />
     );
   }

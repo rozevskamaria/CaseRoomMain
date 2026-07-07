@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Pill } from "../Pill";
 import styles from "./ScoreGrid.module.css";
 
@@ -10,11 +11,16 @@ function deCamelCase(domain: string): string {
 }
 
 export function ScoreGrid({ scores }: ScoreGridProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles.scoreGrid}>
       {Object.entries(scores).map(([domain, score]) => (
         <div key={domain} className={styles.row}>
-          <span className={styles.domain}>{deCamelCase(domain)}</span>
+          <span className={styles.domain}>
+            {t(`feedback.scoreDomain.${domain}` as "feedback.scoreDomain.examination", {
+              defaultValue: deCamelCase(domain),
+            })}
+          </span>
           <Pill tone="score" value={score}>
             {score}
           </Pill>

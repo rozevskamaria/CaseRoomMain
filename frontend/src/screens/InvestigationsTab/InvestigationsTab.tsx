@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button";
 import { ChatInput } from "../../components/ChatInput";
 import { EmptyState } from "../../components/EmptyState";
@@ -26,6 +27,7 @@ export function InvestigationsTab({
   investMsgs,
   labCount,
 }: InvestigationsTabProps) {
+  const { t } = useTranslation();
   const labEnd = useRef<HTMLDivElement>(null);
   const { phase } = session;
   const orderedCount = session.orderedTests.length;
@@ -45,20 +47,21 @@ export function InvestigationsTab({
         {investMsgs.length === 0 ? (
           <EmptyState
             icon="🔬"
-            title="No investigations ordered yet"
+            title={t("investigations.emptyTitle")}
             description={
               <>
-                Type test names in the field below and press{" "}
-                <strong>Order</strong> — for example:
+                {t("investigations.emptyDescPre")}
+                <strong>{t("investigations.emptyDescOrder")}</strong>
+                {t("investigations.emptyDescPost")}
                 <br />
-                <em>"CBC, CRP, immunoglobulins, chest X-ray"</em>
+                <em>{t("investigations.emptyDescExample")}</em>
               </>
             }
           />
         ) : (
           <div>
             <div className={styles.orderedCount}>
-              {orderedCount} investigation{orderedCount !== 1 ? "s" : ""} ordered
+              {t("investigations.orderedCount", { count: orderedCount })}
             </div>
             {investMsgs.map((m) => (
               <MessageBubble
@@ -75,14 +78,14 @@ export function InvestigationsTab({
       {showProposeBanner && (
         <InfoBanner
           tone="teal"
-          message="You have enough results to form a differential."
+          message={t("investigations.proposeBanner")}
           action={
             <Button
               variant="secondary"
               style={{ borderColor: "var(--teal)", color: "var(--teal)" }}
               onClick={callbacks.proposeDifferentials}
             >
-              📋 Propose differentials
+              {t("investigations.proposeDifferentials")}
             </Button>
           }
         />
@@ -91,10 +94,10 @@ export function InvestigationsTab({
       {showInterpretBanner && (
         <InfoBanner
           tone="navy"
-          message="Ready to interpret your results?"
+          message={t("investigations.interpretBanner")}
           action={
             <Button variant="primary" onClick={callbacks.interpretResults}>
-              → Interpret results
+              {t("investigations.interpretResultsAction")}
             </Button>
           }
         />
@@ -102,56 +105,52 @@ export function InvestigationsTab({
 
       {phase === "interpretation" && ui.inputMode === "interp_input" ? (
         <div className={styles.footer}>
-          <div className={styles.footerHint}>
-            Interpret your findings — write your reasoning below
-          </div>
+          <div className={styles.footerHint}>{t("investigations.interpretHint")}</div>
           <textarea
             className={styles.interpTextarea}
             value={session.interpText}
             onChange={(e) => callbacks.onSetInterpText(e.target.value)}
-            placeholder="Which results are most significant? What do they tell you about the likely diagnosis?"
+            placeholder={t("investigations.interpretPlaceholder")}
           />
           <Button
             variant="primary"
             onClick={callbacks.onSubmitInterpretation}
             disabled={ui.busy || !session.interpText.trim()}
           >
-            Submit interpretation
+            {t("investigations.submitInterpretation")}
           </Button>
         </div>
       ) : session.interpResult ? (
         <div className={styles.footer}>
           <TutorCard text={session.interpResult} style={interpResultCardStyle} />
           <div className={styles.nextActionsLabel}>
-            What would you like to do next?
+            {t("investigations.nextActionsLabel")}
           </div>
           <div className={styles.nextActionsRow}>
             <Button variant="primary" onClick={callbacks.submitFinal}>
-              → Submit final answer
+              {t("investigations.submitFinalAnswer")}
             </Button>
             <Button
               variant="secondary"
               onClick={() => callbacks.onSetTab("consultation")}
             >
-              ← Ask the parent more questions
+              {t("investigations.askParentMore")}
             </Button>
             <Button variant="ghost" onClick={callbacks.orderInvestigations}>
-              Order more tests
+              {t("investigations.orderMoreTests")}
             </Button>
           </div>
         </div>
       ) : (
         <div className={styles.orderArea}>
-          <div className={styles.orderLabel}>
-            Order a test — type name(s) and press Enter or Order
-          </div>
+          <div className={styles.orderLabel}>{t("investigations.orderLabel")}</div>
           <ChatInput
             value={ui.input}
             onChange={(e) => callbacks.onSetInput(e.target.value)}
             onSend={callbacks.onOrderTests}
-            placeholder={'e.g. "CBC, CRP, immunoglobulins, chest X-ray, flow cytometry"'}
+            placeholder={t("investigations.orderPlaceholder")}
             disabled={ui.busy}
-            sendLabel="Order"
+            sendLabel={t("investigations.orderSendLabel")}
           />
         </div>
       )}

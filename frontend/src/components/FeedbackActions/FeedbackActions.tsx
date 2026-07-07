@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "../Button";
 import styles from "./FeedbackActions.module.css";
 
@@ -14,18 +15,19 @@ export function FeedbackActions({
   onReflect,
   onBrowse,
 }: FeedbackActionsProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles.actions}>
       <Button variant="primary" onClick={onSeeNext}>
-        See next patient
+        {t("feedback.seeNext")}
       </Button>
       {mode !== "reflection" && (
         <Button variant="secondary" onClick={onReflect}>
-          Reflect on this case
+          {t("feedback.reflectOnCase")}
         </Button>
       )}
       <Button variant="ghost" onClick={onBrowse}>
-        Browse all cases
+        {t("feedback.browseAll")}
       </Button>
     </div>
   );

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button";
 import { ChatInput } from "../../components/ChatInput";
 import { FeedbackReport } from "../../components/FeedbackReport";
@@ -67,6 +68,7 @@ export function ConsultationTab({
   callbacks,
   chatMsgs,
 }: ConsultationTabProps) {
+  const { t } = useTranslation();
   const chatEnd = useRef<HTMLDivElement>(null);
   const { phase } = session;
   const parentCount = session.messages.filter((m) => m.type === "parent").length;
@@ -85,11 +87,14 @@ export function ConsultationTab({
         ))}
 
         {ui.busy && phase !== "feedback" && (
-          <TypingIndicator label="Parent" text="Typing…" />
+          <TypingIndicator
+            label={t("consultation.typingParentLabel")}
+            text={t("consultation.typingParentText")}
+          />
         )}
 
         {ui.busy && phase === "feedback" && (
-          <TypingIndicator text="Generating feedback report…" />
+          <TypingIndicator text={t("consultation.generatingFeedback")} />
         )}
 
         {phase === "feedback" && feedback && (
@@ -108,17 +113,17 @@ export function ConsultationTab({
 
       {ACTION_PHASES.includes(phase) && (
         <div className={styles.actionBar}>
-          <span className={styles.nextStep}>Next step:</span>
+          <span className={styles.nextStep}>{t("consultation.nextStep")}</span>
 
           {!session.examDone && parentCount >= 2 && (
             <Button variant="secondary" onClick={callbacks.onRequestExam}>
-              🩺 Examine patient
+              {t("consultation.examinePatient")}
             </Button>
           )}
 
           {parentCount >= 3 && phase === "history" && (
             <Button variant="ghost" onClick={callbacks.goToSummary}>
-              📝 Submit summary
+              {t("consultation.submitSummaryAction")}
             </Button>
           )}
 
@@ -128,13 +133,13 @@ export function ConsultationTab({
               className={styles.orderInvest}
               onClick={() => callbacks.onSetTab("investigations")}
             >
-              🔬 Order investigations →
+              {t("consultation.orderInvestigations")}
             </Button>
           )}
 
           {orderedCount >= 2 && phase === "tests" && (
             <Button variant="secondary" onClick={callbacks.interpretResults}>
-              📊 Interpret results →
+              {t("consultation.interpretResults")}
             </Button>
           )}
         </div>
@@ -143,7 +148,10 @@ export function ConsultationTab({
       {phase === "reflection" && (
         <div className={styles.reflection}>
           <div className={styles.reflectionMeta}>
-            Reflection question {session.reflectionStep + 1} of {REFLECTION_QS.length}:
+            {t("consultation.reflectionMeta", {
+              current: session.reflectionStep + 1,
+              total: REFLECTION_QS.length,
+            })}
           </div>
           <div className={styles.reflectionQuestion}>
             {REFLECTION_QS[session.reflectionStep]}
@@ -154,10 +162,10 @@ export function ConsultationTab({
               value={ui.input}
               onChange={(e) => callbacks.onSetInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && callbacks.onSubmitReflection()}
-              placeholder="Your reflection..."
+              placeholder={t("consultation.reflectionPlaceholder")}
             />
             <Button variant="primary" onClick={callbacks.onSubmitReflection}>
-              →
+              {t("consultation.reflectionSend")}
             </Button>
           </div>
         </div>
@@ -169,14 +177,14 @@ export function ConsultationTab({
             className={`${styles.reflectionInput} ${styles.formTextarea}`}
             value={session.summary}
             onChange={(e) => callbacks.onSetSummary(e.target.value)}
-            placeholder="Write your clinical summary in 2–4 sentences..."
+            placeholder={t("consultation.summaryPlaceholder")}
           />
           <Button
             variant="primary"
             onClick={callbacks.onSubmitSummary}
             disabled={ui.busy || !session.summary.trim()}
           >
-            Submit summary
+            {t("consultation.submitSummary")}
           </Button>
         </div>
       )}
@@ -187,14 +195,14 @@ export function ConsultationTab({
             className={`${styles.reflectionInput} ${styles.formTextarea}`}
             value={session.differentials}
             onChange={(e) => callbacks.onSetDifferentials(e.target.value)}
-            placeholder="State your top 2–3 differential diagnoses..."
+            placeholder={t("consultation.diffPlaceholder")}
           />
           <Button
             variant="primary"
             onClick={callbacks.onSubmitDifferentials}
             disabled={ui.busy || !session.differentials.trim()}
           >
-            Submit differentials
+            {t("consultation.submitDifferentials")}
           </Button>
         </div>
       )}
@@ -207,7 +215,7 @@ export function ConsultationTab({
               value={ui.input}
               onChange={(e) => callbacks.onSetInput(e.target.value)}
               onSend={callbacks.onSend}
-              placeholder="Ask the parent a question…"
+              placeholder={t("consultation.askParentPlaceholder")}
               disabled={ui.busy}
             />
           </div>

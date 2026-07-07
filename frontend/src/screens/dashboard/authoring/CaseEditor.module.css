@@ -1,0 +1,119 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 6px;
+}
+
+.headMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.scalarCard,
+.proseCard {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px;
+}
+
+.sectionHeading {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.scalarRow {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.selectField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.select {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.flexField {
+  flex: 1;
+  min-width: 180px;
+}
+
+.listBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.listHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.listRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.wrongPathRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.wrongPathKey {
+  flex: 0 0 200px;
+}

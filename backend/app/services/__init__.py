@@ -1,13 +1,16 @@
-from app.services.session import (
+from app.services.projection import (
+    AttemptProjection,
     FinalAnswer,
     Message,
     SendResult,
-    Session,
-    SessionService,
 )
+from app.services.session import SessionService
+
+Session = AttemptProjection
 
 
 __all__ = [
+    "AttemptProjection",
     "FinalAnswer",
     "Message",
     "SendResult",

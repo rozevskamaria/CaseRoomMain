@@ -1,0 +1,102 @@
+services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks: [caseroom]
+
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_GRAPHQL_URL: https://caseroom.tech/graphql
+        VITE_SSE_BASE: https://caseroom.tech
+    restart: unless-stopped
+    networks: [caseroom]
+
+  backend:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      CORS_ORIGINS: https://caseroom.tech,https://api.caseroom.tech
+      DATABASE_URL: postgresql+asyncpg://caseroom:${POSTGRES_PASSWORD}@postgres:5432/caseroom
+      REDIS_URL: redis://redis:6379/0
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_RESEARCH_TOKEN: ${MCP_RESEARCH_TOKEN:-}
+      RESEARCH_PSEUDONYM_PEPPER: ${RESEARCH_PSEUDONYM_PEPPER:-}
+      K_ANON_THRESHOLD: ${K_ANON_THRESHOLD:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [caseroom]
+
+  worker:
+    build:
+      context: ../backend
+    restart: unless-stopped
+    command: ["arq", "app.workers.worker.WorkerSettings"]
+    env_file:
+      - .env
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+asyncpg://caseroom:${POSTGRES_PASSWORD}@postgres:5432/caseroom
+      REDIS_URL: redis://redis:6379/0
+      RESEARCH_PSEUDONYM_PEPPER: ${RESEARCH_PSEUDONYM_PEPPER:-}
+      K_ANON_THRESHOLD: ${K_ANON_THRESHOLD:-5}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [caseroom]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: caseroom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: caseroom
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U caseroom"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks: [caseroom]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks: [caseroom]
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:
+
+networks:
+  caseroom:
+    driver: bridge

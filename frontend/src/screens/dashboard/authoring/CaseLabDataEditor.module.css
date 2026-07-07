@@ -1,0 +1,72 @@
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.headRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rowCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.rowHead {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.nameField {
+  flex: 1;
+  min-width: 200px;
+}
+
+.kindField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.kindLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.select {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}

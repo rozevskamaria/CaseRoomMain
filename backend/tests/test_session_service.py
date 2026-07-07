@@ -8,7 +8,9 @@ import app.content.cases as cases_module
 from app.content.cases import XLA
 from app.schemas.case import Case
 from app.services import SessionService
+from app.services.projection import EventType, NewEvent
 from app.services.prompts import (
+    FEEDBACK_SCHEMA,
     HINT_FALLBACK,
     REFLECTION_QS,
     build_hint_context,
@@ -21,11 +23,34 @@ from app.services.prompts import (
 )
 
 
+FEEDBACK_FIXTURE = {
+    "diagnosticAccuracy": "correct",
+    "diagnosticComment": "XLA is correct.",
+    "wellDone": ["Recognised absent B cells"],
+    "missing": ["Could have screened earlier"],
+    "keyClues": ["Onset at 6 months"],
+    "reasoningPathway": "Recurrent infections, absent B cells, BTK variant.",
+    "managementPoints": ["Start IVIG"],
+    "geneticPoints": ["X-linked recessive"],
+    "revisionTopic": "Recurrent bacterial infection in infancy.",
+    "scores": {
+        "historyTaking": "Good",
+        "examination": "Good",
+        "differential": "Excellent",
+        "testSelection": "Good",
+        "interpretation": "Excellent",
+        "management": "Good",
+    },
+}
+
+
 class FakeLLMClient:
-    def __init__(self, reply="canned-reply", raises=False):
+    def __init__(self, reply="canned-reply", raises=False, structured=None):
         self._reply = reply
         self._raises = raises
+        self._structured = structured if structured is not None else FEEDBACK_FIXTURE
         self.calls = []
+        self.structured_calls = []
 
     async def generate(self, system, messages, max_tokens):
         self.calls.append(
@@ -35,20 +60,86 @@ class FakeLLMClient:
             raise RuntimeError("boom")
         return self._reply
 
+    async def generate_structured(self, system, messages, schema, max_tokens):
+        self.structured_calls.append(
+            {
+                "system": system,
+                "messages": messages,
+                "schema": schema,
+                "max_tokens": max_tokens,
+            }
+        )
+        if self._raises:
+            raise RuntimeError("boom")
+        return self._structured
+
 
 def sequential_ids():
     counter = itertools.count(1)
     return lambda: f"id-{next(counter)}"
 
 
-def make_service(reply="canned-reply", rng=None, raises=False):
-    llm = FakeLLMClient(reply=reply, raises=raises)
+def make_service(reply="canned-reply", rng=None, raises=False, structured=None):
+    llm = FakeLLMClient(reply=reply, raises=raises, structured=structured)
     service = SessionService(
         llm,
         rng=rng or (lambda: 0.0),
         id_factory=sequential_ids(),
     )
     return service, llm
+
+
+async def append_raw(service, attempt_id, type, data):
+    await service._store.append_events(attempt_id, [NewEvent(type=type, data=data)])
+
+
+async def add_student(service, attempt_id, text):
+    await append_raw(
+        service,
+        attempt_id,
+        EventType.STUDENT_MESSAGE_SENT,
+        {"message_id": service._next_id(), "text": text},
+    )
+
+
+async def add_message(service, attempt_id, type, text):
+    type_to_event = {
+        "system": EventType.SYSTEM_MESSAGE_APPENDED,
+        "student": EventType.STUDENT_MESSAGE_SENT,
+    }
+    if type in type_to_event:
+        await append_raw(
+            service,
+            attempt_id,
+            type_to_event[type],
+            {"message_id": service._next_id(), "text": text},
+        )
+    elif type == "parent":
+        await append_raw(
+            service,
+            attempt_id,
+            EventType.PARENT_REPLY_APPENDED,
+            {"message_id": service._next_id(), "text": text},
+        )
+    elif type == "lab":
+        await append_raw(
+            service,
+            attempt_id,
+            EventType.LAB_RESULT_SHOWN,
+            {"message_id": service._next_id(), "text": text, "key": "x", "is_genetic": False},
+        )
+    else:
+        raise ValueError(type)
+
+
+async def set_phase(service, attempt_id, phase):
+    proj = await service.get(attempt_id)
+    await append_raw(
+        service,
+        attempt_id,
+        EventType.PHASE_CHANGED,
+        {"from_phase": proj.phase, "to_phase": phase},
+    )
 
 
 SCID = Case(
@@ -80,9 +171,9 @@ def register_scid():
     cases_module.CASES.pop(SCID.id, None)
 
 
-def test_start_case_resets_and_appends_opening():
+async def test_start_case_resets_and_appends_opening():
     service, llm = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
     assert session.case_id == "xla"
     assert session.mode == "practice"
@@ -108,17 +199,19 @@ def test_start_case_resets_and_appends_opening():
     assert llm.calls == []
 
 
-def test_start_case_unknown_case_raises():
+async def test_start_case_unknown_case_raises():
     service, _ = make_service()
     with pytest.raises(KeyError):
-        service.start_case("nope", "practice")
+        await service.start_case("nope", "practice")
 
 
-def test_send_message_test_order_branch():
+async def test_send_message_test_order_branch():
     service, llm = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    result = service.send_message(session, "Please order immunoglobulins and a CBC")
+    result, session = await service.send_message(
+        session.id, "Please order immunoglobulins and a CBC"
+    )
 
     assert result.branch == "tests"
     assert session.phase == "tests"
@@ -134,11 +227,13 @@ def test_send_message_test_order_branch():
     assert llm.calls == []
 
 
-def test_send_message_test_order_genetic_nudge_in_practice():
+async def test_send_message_test_order_genetic_nudge_in_practice():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.send_message(session, "order the immunodeficiency gene panel")
+    _, session = await service.send_message(
+        session.id, "order the immunodeficiency gene panel"
+    )
 
     assert "immunodeficiency gene panel" in session.ordered_tests
     lab_tutor = [m for m in session.messages if m.type == "lab_tutor"]
@@ -146,30 +241,29 @@ def test_send_message_test_order_genetic_nudge_in_practice():
     assert lab_tutor[0].text.startswith("💡 Clinical reasoning note: Genetic testing")
 
 
-def test_send_message_test_order_already_ordered():
+async def test_send_message_test_order_already_ordered():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
-    service.send_message(session, "order a CBC")
+    session = await service.start_case("xla", "practice")
+    _, session = await service.send_message(session.id, "order a CBC")
     before = len(session.messages)
 
-    service.send_message(session, "order a CBC")
+    _, session = await service.send_message(session.id, "order a CBC")
 
     assert session.messages[-1].text == "These investigations have already been ordered."
     assert len(session.messages) == before + 2
 
 
-def _pad_history(service, session, count):
+async def _pad_history(service, attempt_id, count):
     for i in range(count):
-        msg = service._add_msg(session, f"filler {i}", "student")  # noqa: SLF001
-        assert msg.type == "student"
+        await add_student(service, attempt_id, f"filler {i}")
 
 
-def test_send_message_scid_trigger_fires_when_rng_above_threshold(register_scid):
+async def test_send_message_scid_trigger_fires_when_rng_above_threshold(register_scid):
     service, llm = make_service(rng=lambda: 0.7)
-    session = service.start_case("scid", "practice")
-    _pad_history(service, session, 9)
+    session = await service.start_case("scid", "practice")
+    await _pad_history(service, session.id, 9)
 
-    result = service.send_message(session, "tell me about the rash")
+    result, session = await service.send_message(session.id, "tell me about the rash")
 
     assert result.branch == "scid"
     assert result.messages is None
@@ -182,80 +276,92 @@ def test_send_message_scid_trigger_fires_when_rng_above_threshold(register_scid)
     assert llm.calls == []
 
 
-def test_send_message_scid_trigger_not_fired_when_rng_at_threshold(register_scid):
+async def test_send_message_scid_trigger_not_fired_when_rng_at_threshold(register_scid):
     service, _ = make_service(rng=lambda: 0.6)
-    session = service.start_case("scid", "practice")
-    _pad_history(service, session, 9)
+    session = await service.start_case("scid", "practice")
+    await _pad_history(service, session.id, 9)
 
-    result = service.send_message(session, "tell me about the rash")
+    result, session = await service.send_message(session.id, "tell me about the rash")
 
     assert result.branch == "parent"
     assert result.system == SCID.parent_prompt
     assert result.max_tokens == 300
-    assert not any(m.text.startswith("Doctor, I am getting worried") for m in session.messages)
+    assert not any(
+        m.text.startswith("Doctor, I am getting worried") for m in session.messages
+    )
 
 
-def test_send_message_scid_trigger_suppressed_by_urgent_keyword(register_scid):
+async def test_send_message_scid_trigger_suppressed_by_urgent_keyword(register_scid):
     service, _ = make_service(rng=lambda: 0.99)
-    session = service.start_case("scid", "practice")
-    service._add_msg(session, "we should arrange urgent isolation", "student")  # noqa: SLF001
-    _pad_history(service, session, 9)
+    session = await service.start_case("scid", "practice")
+    await add_student(service, session.id, "we should arrange urgent isolation")
+    await _pad_history(service, session.id, 9)
 
-    result = service.send_message(session, "tell me about the rash")
+    result, session = await service.send_message(session.id, "tell me about the rash")
 
     assert result.branch == "parent"
 
 
-def test_send_message_parent_branch_history_mapping():
+async def test_send_message_parent_branch_history_mapping():
     service, llm = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
     opening_text = session.messages[0].text
-    service._add_msg(session, "When did it start?", "student")  # noqa: SLF001
-    service._add_msg(session, "It started at six months.", "parent")  # noqa: SLF001
-    service._add_msg(session, "__LAB__CBC\nWBC normal", "lab")  # noqa: SLF001
+    await add_message(service, session.id, "student", "When did it start?")
+    await add_message(service, session.id, "parent", "It started at six months.")
+    await add_message(service, session.id, "lab", "__LAB__CBC\nWBC normal")
 
-    result = service.send_message(session, "Any family history?")
+    result, session = await service.send_message(session.id, "Any family history?")
 
     assert result.branch == "parent"
     assert result.system == XLA.parent_prompt
     assert result.max_tokens == 300
     assert result.messages == [
-        {"role": "assistant", "content": opening_text},
         {"role": "user", "content": "When did it start?"},
         {"role": "assistant", "content": "It started at six months."},
         {"role": "assistant", "content": "[Lab result shown]"},
         {"role": "user", "content": "Any family history?"},
     ]
+    assert all(m["content"] != opening_text for m in result.messages)
     assert llm.calls == []
 
 
-def test_append_parent_reply_emits_nudge_on_fifth_parent_message():
+async def test_append_parent_reply_emits_nudge_on_fifth_parent_message():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
     for _ in range(4):
-        service.append_parent_reply(session, "reply")
-    assert not any(m.text.startswith("💡 Clinical reasoning note: You have gathered") for m in session.messages)
+        session = await service.append_parent_reply(session.id, "reply")
+    assert not any(
+        m.text.startswith("💡 Clinical reasoning note: You have gathered")
+        for m in session.messages
+    )
 
-    service.append_parent_reply(session, "fifth reply")
+    session = await service.append_parent_reply(session.id, "fifth reply")
 
-    nudges = [m for m in session.messages if m.text.startswith("💡 Clinical reasoning note: You have gathered")]
+    nudges = [
+        m
+        for m in session.messages
+        if m.text.startswith("💡 Clinical reasoning note: You have gathered")
+    ]
     assert len(nudges) == 1
     assert nudges[0].type == "tutor"
 
 
-def test_append_parent_reply_no_nudge_in_exam_mode():
+async def test_append_parent_reply_no_nudge_in_exam_mode():
     service, _ = make_service()
-    session = service.start_case("xla", "exam")
+    session = await service.start_case("xla", "exam")
     for _ in range(5):
-        service.append_parent_reply(session, "reply")
-    assert not any(m.text.startswith("💡 Clinical reasoning note: You have gathered") for m in session.messages)
+        session = await service.append_parent_reply(session.id, "reply")
+    assert not any(
+        m.text.startswith("💡 Clinical reasoning note: You have gathered")
+        for m in session.messages
+    )
 
 
-def test_request_exam_appends_findings_and_practice_note():
+async def test_request_exam_appends_findings_and_practice_note():
     service, llm = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.request_exam(session)
+    session = await service.request_exam(session.id)
 
     types = [m.type for m in session.messages[-3:]]
     assert types == ["student", "system", "tutor"]
@@ -266,32 +372,32 @@ def test_request_exam_appends_findings_and_practice_note():
     assert llm.calls == []
 
 
-def test_request_exam_no_note_in_exam_mode():
+async def test_request_exam_no_note_in_exam_mode():
     service, _ = make_service()
-    session = service.start_case("xla", "exam")
+    session = await service.start_case("xla", "exam")
 
-    service.request_exam(session)
+    session = await service.request_exam(session.id)
 
     assert session.messages[-1].type == "system"
     assert session.exam_done is True
 
 
-def test_send_test_order_not_recognised():
+async def test_send_test_order_not_recognised():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.send_test_order(session, "xyzzy nonsense")
+    session = await service.send_test_order(session.id, "xyzzy nonsense")
 
     assert session.messages[-1].type == "lab_note"
     assert "was not recognised" in session.messages[-1].text
     assert session.ordered_tests == set()
 
 
-def test_send_test_order_phase_jump_and_lab():
+async def test_send_test_order_phase_jump_and_lab():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.send_test_order(session, "immunoglobulins")
+    session = await service.send_test_order(session.id, "immunoglobulins")
 
     assert session.phase == "tests"
     assert "immunoglobulin" in session.ordered_tests
@@ -299,12 +405,12 @@ def test_send_test_order_phase_jump_and_lab():
     assert session.messages[-1].text.startswith("__LAB__immunoglobulins")
 
 
-def test_send_test_order_already_ordered_note():
+async def test_send_test_order_already_ordered_note():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
-    service.send_test_order(session, "CBC")
+    session = await service.start_case("xla", "practice")
+    await service.send_test_order(session.id, "CBC")
 
-    service.send_test_order(session, "CBC")
+    session = await service.send_test_order(session.id, "CBC")
 
     assert session.messages[-1].type == "lab_note"
     assert session.messages[-1].text == "These investigations have already been ordered."
@@ -312,10 +418,10 @@ def test_send_test_order_already_ordered_note():
 
 async def test_submit_summary_calls_llm_and_transitions():
     service, llm = make_service(reply="good summary feedback")
-    session = service.start_case("xla", "practice")
-    service.set_summary(session, "My summary text")
+    session = await service.start_case("xla", "practice")
+    await service.set_summary(session.id, "My summary text")
 
-    await service.submit_summary(session)
+    session = await service.submit_summary(session.id)
 
     assert len(llm.calls) == 1
     call = llm.calls[0]
@@ -329,10 +435,10 @@ async def test_submit_summary_calls_llm_and_transitions():
 
 async def test_submit_differentials_wrong_path_shortcut_no_llm():
     service, llm = make_service()
-    session = service.start_case("xla", "practice")
-    service.set_differentials(session, "I think this is CVID actually")
+    session = await service.start_case("xla", "practice")
+    await service.set_differentials(session.id, "I think this is CVID actually")
 
-    await service.submit_differentials(session)
+    session = await service.submit_differentials(session.id)
 
     assert llm.calls == []
     assert session.phase == "tests"
@@ -342,15 +448,17 @@ async def test_submit_differentials_wrong_path_shortcut_no_llm():
 
 async def test_submit_differentials_llm_path():
     service, llm = make_service(reply="differential feedback")
-    session = service.start_case("xla", "practice")
-    service.set_differentials(session, "Possibly a phagocyte disorder")
+    session = await service.start_case("xla", "practice")
+    await service.set_differentials(session.id, "Possibly a phagocyte disorder")
 
-    await service.submit_differentials(session)
+    session = await service.submit_differentials(session.id)
 
     assert len(llm.calls) == 1
     call = llm.calls[0]
     assert call["system"] == make_differential_eval_prompt(XLA, "practice")
-    assert call["messages"] == [{"role": "user", "content": "Possibly a phagocyte disorder"}]
+    assert call["messages"] == [
+        {"role": "user", "content": "Possibly a phagocyte disorder"}
+    ]
     assert call["max_tokens"] == 250
     assert session.phase == "tests"
     assert session.messages[-1].text == "💡 Clinical reasoning note:\ndifferential feedback"
@@ -358,11 +466,11 @@ async def test_submit_differentials_llm_path():
 
 async def test_submit_interpretation_calls_llm_and_sets_result():
     service, llm = make_service(reply="interp feedback")
-    session = service.start_case("xla", "practice")
-    session.phase = "interpretation"
-    service.set_interp_text(session, "B cells are absent")
+    session = await service.start_case("xla", "practice")
+    await set_phase(service, session.id, "interpretation")
+    await service.set_interp_text(session.id, "B cells are absent")
 
-    await service.submit_interpretation(session)
+    session = await service.submit_interpretation(session.id)
 
     assert len(llm.calls) == 1
     call = llm.calls[0]
@@ -376,41 +484,41 @@ async def test_submit_interpretation_calls_llm_and_sets_result():
 
 async def test_submit_interpretation_error_path():
     service, _ = make_service(raises=True)
-    session = service.start_case("xla", "practice")
-    session.phase = "interpretation"
-    service.set_interp_text(session, "B cells are absent")
+    session = await service.start_case("xla", "practice")
+    await set_phase(service, session.id, "interpretation")
+    await service.set_interp_text(session.id, "B cells are absent")
 
-    await service.submit_interpretation(session)
+    session = await service.submit_interpretation(session.id)
 
     assert session.messages[-1].type == "lab_note"
     assert session.interp_result == "⚠ Connection error. Please try again."
 
 
 async def test_submit_final_answer_parses_json_and_transitions():
-    payload = '{"diagnosticAccuracy": "correct", "wellDone": ["x"]}'
-    service, llm = make_service(reply="Here is feedback: " + payload + " thanks")
-    session = service.start_case("xla", "practice")
-    service.set_final_answer_field(session, "diagnosis", "XLA")
-    service.set_final_answer_field(session, "management", "IVIG")
+    service, llm = make_service(structured=FEEDBACK_FIXTURE)
+    session = await service.start_case("xla", "practice")
+    await service.set_final_answer_field(session.id, "diagnosis", "XLA")
+    await service.set_final_answer_field(session.id, "management", "IVIG")
 
-    await service.submit_final_answer(session)
+    session = await service.submit_final_answer(session.id)
 
-    assert len(llm.calls) == 1
-    call = llm.calls[0]
+    assert len(llm.structured_calls) == 1
+    call = llm.structured_calls[0]
     assert call["system"].startswith(make_feedback_prompt(XLA))
     assert "Student's final answer:" in call["system"]
     assert "Diagnosis: XLA" in call["system"]
+    assert call["schema"] is FEEDBACK_SCHEMA
     assert call["max_tokens"] == 1500
-    assert session.feedback == {"diagnosticAccuracy": "correct", "wellDone": ["x"]}
+    assert session.feedback == FEEDBACK_FIXTURE
     assert session.phase == "feedback"
 
 
 async def test_submit_final_answer_error_appends_system_message():
     service, _ = make_service(raises=True)
-    session = service.start_case("xla", "practice")
-    service.set_final_answer_field(session, "diagnosis", "XLA")
+    session = await service.start_case("xla", "practice")
+    await service.set_final_answer_field(session.id, "diagnosis", "XLA")
 
-    await service.submit_final_answer(session)
+    session = await service.submit_final_answer(session.id)
 
     assert session.feedback is None
     assert session.phase == "history"
@@ -420,43 +528,56 @@ async def test_submit_final_answer_error_appends_system_message():
 
 async def test_request_hint_increments_before_context_and_calls_llm():
     service, llm = make_service(reply="here is a hint")
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    hint = await service.request_hint(session)
+    hint = await service.request_hint(session.id)
+    session = await service.get(session.id)
 
     assert hint == "here is a hint"
     assert session.hints_used == 1
     assert len(llm.calls) == 1
     call = llm.calls[0]
-    expected_msgs = [{"text": m.text, "type": m.type} for m in session.messages]
-    expected_context = build_hint_context(XLA, "history", expected_msgs, [], 1)
-    assert call["system"] == build_hint_system_prompt(expected_context["context"])
-    assert "HINTS USED SO FAR: 1" in call["system"]
     assert call["messages"] == [{"role": "user", "content": "I need a hint."}]
     assert call["max_tokens"] == 200
+    assert "HINTS USED SO FAR: 1" in call["system"]
 
 
 async def test_request_hint_fallback_on_error():
     service, _ = make_service(raises=True)
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    hint = await service.request_hint(session)
+    hint = await service.request_hint(session.id)
+    session = await service.get(session.id)
 
     assert hint == HINT_FALLBACK
     assert session.hints_used == 1
 
 
+async def test_request_hint_context_uses_current_messages():
+    service, llm = make_service(reply="here is a hint")
+    session = await service.start_case("xla", "practice")
+
+    await service.request_hint(session.id)
+    session = await service.get(session.id)
+
+    msgs = [{"text": m.text, "type": m.type} for m in session.messages]
+    expected_context = build_hint_context(XLA, "history", msgs, [], 1)
+    assert llm.calls[0]["system"] == build_hint_system_prompt(
+        expected_context["context"]
+    )
+
+
 async def test_submit_reflection_advances_steps_then_summarises():
     service, llm = make_service(reply="reflection summary")
-    session = service.start_case("xla", "reflection")
-    session.phase = "reflection"
+    session = await service.start_case("xla", "reflection")
+    await set_phase(service, session.id, "reflection")
 
     for i in range(4):
-        await service.submit_reflection(session, f"answer {i}")
+        session = await service.submit_reflection(session.id, f"answer {i}")
         assert session.reflection_step == i + 1
         assert llm.calls == []
 
-    await service.submit_reflection(session, "final answer")
+    session = await service.submit_reflection(session.id, "final answer")
 
     assert len(session.reflection_answers) == 5
     assert session.reflection_answers[0]["q"] == REFLECTION_QS[0]
@@ -469,67 +590,78 @@ async def test_submit_reflection_advances_steps_then_summarises():
     assert session.messages[-1].text == "reflection summary"
 
 
-def test_button_transition_go_to_summary():
+async def test_button_transition_go_to_summary():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.go_to_summary(session, "Please write a clinical summary.")
+    session = await service.go_to_summary(session.id, "Please write a clinical summary.")
 
     assert session.phase == "summary"
     assert session.messages[-1].type == "tutor"
     assert session.messages[-1].text == "Please write a clinical summary."
 
 
-def test_button_transition_go_to_reflection():
+async def test_button_transition_go_to_reflection():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
-    session.phase = "feedback"
+    session = await service.start_case("xla", "practice")
+    await set_phase(service, session.id, "feedback")
 
-    service.go_to_reflection(session)
+    session = await service.go_to_reflection(session.id)
 
     assert session.phase == "reflection"
     assert session.mode == "reflection"
 
 
-def test_button_transition_go_to_differential():
+async def test_button_transition_go_to_differential():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.go_to_differential(session, "Propose your differentials.")
+    session = await service.go_to_differential(session.id, "Propose your differentials.")
 
     assert session.phase == "differential"
     assert session.messages[-1].type == "tutor"
 
 
-def test_button_transition_go_to_interpretation():
+async def test_button_transition_go_to_interpretation():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
-    session.phase = "tests"
+    session = await service.start_case("xla", "practice")
+    await set_phase(service, session.id, "tests")
 
-    service.go_to_interpretation(session, "Interpret the results.")
+    session = await service.go_to_interpretation(session.id, "Interpret the results.")
 
     assert session.phase == "interpretation"
     assert session.messages[-1].type == "lab_tutor"
 
 
-def test_button_transition_go_to_final():
+async def test_button_transition_go_to_final():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case("xla", "practice")
 
-    service.go_to_final(session, "Submit your final diagnosis.")
+    session = await service.go_to_final(session.id, "Submit your final diagnosis.")
 
     assert session.phase == "final"
     assert session.messages[-1].type == "tutor"
 
 
-def test_button_transition_go_to_tests_clears_interp():
+async def test_button_transition_go_to_tests_clears_interp():
     service, _ = make_service()
-    session = service.start_case("xla", "practice")
-    session.phase = "interpretation"
-    service.set_interp_text(session, "something")
-    session.interp_result = "result"
+    session = await service.start_case("xla", "practice")
+    await set_phase(service, session.id, "interpretation")
+    await service.set_interp_text(session.id, "something")
+    await append_raw(
+        service,
+        session.id,
+        EventType.INTERPRETATION_EVALUATED,
+        {
+            "interp_note_message_id": service._next_id(),
+            "interp_note_text": "note",
+            "result_message_id": service._next_id(),
+            "result": "result",
+            "error": False,
+        },
+    )
 
-    service.go_to_tests(session)
+    session = await service.go_to_tests(session.id)
 
     assert session.phase == "tests"
     assert session.interp_text == ""

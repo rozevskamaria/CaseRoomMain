@@ -6,6 +6,7 @@ export const SessionFieldsFragment = graphql(`
     caseId
     phase
     mode
+    language
     hintsUsed
     examDone
     summary
@@ -77,6 +78,14 @@ export const SessionQuery = graphql(`
 export const StartCaseMutation = graphql(`
   mutation StartCase($caseId: String!, $mode: String!) {
     startCase(caseId: $caseId, mode: $mode) {
+      ...SessionFields
+    }
+  }
+`);
+
+export const StartCaseLocalizedMutation = graphql(`
+  mutation StartCaseLocalized($caseId: String!, $mode: String!, $language: String!) {
+    startCaseLocalized(caseId: $caseId, mode: $mode, language: $language) {
       ...SessionFields
     }
   }

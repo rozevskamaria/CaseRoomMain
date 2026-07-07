@@ -41,14 +41,24 @@ class FakeLLMClient:
             "Before that he was healthy.",
         ]
         self.generate_calls: list[dict] = []
+        self.structured_calls: list[dict] = []
         self.stream_calls: list[dict] = []
+
+    async def generate_structured(self, system, messages, schema, max_tokens):
+        self.structured_calls.append(
+            {
+                "system": system,
+                "messages": messages,
+                "schema": schema,
+                "max_tokens": max_tokens,
+            }
+        )
+        return FEEDBACK_JSON
 
     async def generate(self, system, messages, max_tokens):
         self.generate_calls.append(
             {"system": system, "messages": messages, "max_tokens": max_tokens}
         )
-        if "STRUCTURED FORMATIVE FEEDBACK" in system:
-            return "Here is your feedback:\n" + json.dumps(FEEDBACK_JSON) + "\nWell done."
         if "CONTEXTUAL HINT" in system:
             return "Consider which immune compartment the infection pattern points to."
         if "summarising a medical student's reflection" in system:
@@ -79,9 +89,15 @@ def fake_llm():
 
 
 @pytest_asyncio.fixture
-async def client():
+async def client(student_principal):
+    from tests.conftest import auth_cookies
+
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        cookies=auth_cookies(student_principal),
+    ) as ac:
         yield ac
 
 
@@ -302,7 +318,7 @@ async def test_full_xla_playthrough(fake_llm, client):
     sess_after = (await _gql(client, SESSION, {"id": sid}))["session"]
     assert sess_after["hintsUsed"] == 1
 
-    gen_before = len(fake_llm.generate_calls)
+    structured_before = len(fake_llm.structured_calls)
     final = await _gql(
         client,
         """
@@ -332,10 +348,10 @@ async def test_full_xla_playthrough(fake_llm, client):
     )
     fr = final["submitFinalAnswer"]
     assert fr["phase"] == "feedback"
-    assert len(fake_llm.generate_calls) == gen_before + 1
-    assert fake_llm.generate_calls[-1]["max_tokens"] == 1500
+    assert len(fake_llm.structured_calls) == structured_before + 1
+    assert fake_llm.structured_calls[-1]["max_tokens"] == 1500
     fb = fr["feedback"]
-    assert fb is not None, "feedback object should be parsed from the JSON-in-prose reply"
+    assert fb is not None, "feedback object should come from the structured output"
     assert fb["diagnosticAccuracy"] == "correct"
     assert fb["wellDone"] == FEEDBACK_JSON["wellDone"]
     assert fb["keyClues"] == FEEDBACK_JSON["keyClues"]
@@ -345,7 +361,7 @@ async def test_full_xla_playthrough(fake_llm, client):
     assert fb["scores"]["differential"] == "Excellent"
     assert fb["scores"]["management"] == "Good"
 
-    final_sys = fake_llm.generate_calls[-1]["system"]
+    final_sys = fake_llm.structured_calls[-1]["system"]
     assert "Student's final answer:" in final_sys
     assert "X-linked agammaglobulinaemia (XLA)" in final_sys
 

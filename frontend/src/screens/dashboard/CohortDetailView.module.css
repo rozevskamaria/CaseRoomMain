@@ -1,0 +1,139 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cohortName {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.cohortYear {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 0;
+  border-top: 1px solid var(--border);
+}
+
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.sectionHeading {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.emptyText {
+  font-size: 14px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.assignmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.assignmentCard {
+  padding: 14px 16px;
+}
+
+.assignmentTitle {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 4px;
+}
+
+.assignmentMeta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.createCard {
+  padding: 18px;
+}
+
+.createHeading {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.select {
+  font-family: var(--font-serif);
+  font-size: 14px;
+  padding: 9px 12px;
+  border: 1px solid var(--border-dark);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.staffList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.staffItem {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.auditTable {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+
+.auditTh {
+  padding: 6px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--slate);
+  text-align: left;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+  background: var(--slate-pale);
+}
+
+.auditTd {
+  padding: 7px 12px;
+  font-size: 12.5px;
+  color: var(--text-light);
+  border-bottom: 1px solid var(--border);
+}

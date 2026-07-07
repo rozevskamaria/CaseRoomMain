@@ -1,0 +1,38 @@
+.group {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.option {
+  padding: 5px 10px;
+  background: transparent;
+  color: var(--muted);
+  border: none;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+.option:hover:not(:disabled) {
+  background: var(--surface-alt);
+}
+
+.option:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.active {
+  background: var(--navy);
+  color: #fff;
+}
+
+.active:hover:not(:disabled) {
+  background: var(--navy);
+}

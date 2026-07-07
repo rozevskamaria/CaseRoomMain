@@ -1,4 +1,6 @@
 import { readSeenCases, resetSeenCases, writeSeenCase } from "./seenCases";
+import { readLocale } from "../i18n/useLocale";
+import type { Locale } from "../i18n/types";
 
 export type Screen = "welcome" | "chat" | "reflection_done";
 export type Mode = "practice" | "exam" | "reflection";
@@ -8,6 +10,7 @@ export type InputMode = "history" | "summary_input" | "diff_input" | "interp_inp
 export interface UiState {
   screen: Screen;
   mode: Mode;
+  language: Locale;
   selectedCaseId: string | null;
   sessionId: string | null;
   activeTab: ActiveTab;
@@ -24,6 +27,7 @@ export function createInitialUiState(): UiState {
   return {
     screen: "welcome",
     mode: "practice",
+    language: readLocale(),
     selectedCaseId: null,
     sessionId: null,
     activeTab: "consultation",
@@ -41,6 +45,7 @@ export const initialUiState: UiState = createInitialUiState();
 
 export type UiAction =
   | { type: "SET_MODE"; mode: Mode }
+  | { type: "SET_LANGUAGE"; language: Locale }
   | { type: "SET_SHOW_BROWSE"; value: boolean }
   | { type: "MARK_CASE_SEEN"; caseId: string }
   | { type: "RESET_PROGRESS" }
@@ -64,6 +69,9 @@ export function uiReducer(state: UiState, action: UiAction): UiState {
   switch (action.type) {
     case "SET_MODE":
       return { ...state, mode: action.mode };
+
+    case "SET_LANGUAGE":
+      return { ...state, language: action.language };
 
     case "SET_SHOW_BROWSE":
       return { ...state, showBrowse: action.value };

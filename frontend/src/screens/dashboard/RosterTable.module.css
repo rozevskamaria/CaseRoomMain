@@ -1,0 +1,52 @@
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border);
+}
+
+.headRow {
+  background: var(--slate-pale);
+}
+
+.th {
+  padding: 6px 12px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--slate);
+  text-align: left;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.thId {
+  width: 22%;
+}
+
+.bodyRow {
+  border-bottom: 1px solid var(--border);
+}
+
+.idCell {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--navy);
+  font-weight: 600;
+  border-right: 1px solid var(--border);
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+.cell {
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--text-light);
+  vertical-align: middle;
+  line-height: 1.5;
+}
+
+.actionCell {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

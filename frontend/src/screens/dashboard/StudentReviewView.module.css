@@ -1,0 +1,63 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.intro {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 480px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.attemptCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.attemptMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.attemptTitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.attemptMeta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.attemptRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.reviewLink {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--navy-light);
+}

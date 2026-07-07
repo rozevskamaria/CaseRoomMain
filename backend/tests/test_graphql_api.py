@@ -14,8 +14,10 @@ from app.services import SessionService
 class FakeLLMClient:
     def __init__(self, reply="canned-reply"):
         self.reply = reply
+        self.structured = {}
         self.stream_chunks = ["Hello", " from", " the", " parent"]
         self.generate_calls = []
+        self.structured_calls = []
         self.stream_calls = []
 
     async def generate(self, system, messages, max_tokens):
@@ -23,6 +25,17 @@ class FakeLLMClient:
             {"system": system, "messages": messages, "max_tokens": max_tokens}
         )
         return self.reply
+
+    async def generate_structured(self, system, messages, schema, max_tokens):
+        self.structured_calls.append(
+            {
+                "system": system,
+                "messages": messages,
+                "schema": schema,
+                "max_tokens": max_tokens,
+            }
+        )
+        return self.structured
 
     async def stream(self, system, messages, max_tokens):
         self.stream_calls.append(
@@ -48,9 +61,15 @@ def fake_llm():
 
 
 @pytest_asyncio.fixture
-async def gql_client():
+async def gql_client(student_principal):
+    from tests.conftest import auth_cookies
+
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        cookies=auth_cookies(student_principal),
+    ) as ac:
         yield ac
 
 
@@ -90,6 +109,42 @@ async def test_query_case_unknown_returns_null(fake_llm, gql_client):
         {"id": "nope"},
     )
     assert data["case"] is None
+
+
+START_LOCALIZED = """
+mutation StartL($caseId: String!, $mode: String!, $language: String!) {
+  startCaseLocalized(caseId: $caseId, mode: $mode, language: $language) {
+    id phase mode language caseId
+  }
+}
+"""
+
+
+async def test_start_case_defaults_to_english_language(fake_llm, gql_client):
+    data = await _gql(
+        gql_client,
+        "mutation S($c: String!, $m: String!) { startCase(caseId: $c, mode: $m) { id language } }",
+        {"c": "xla", "m": "practice"},
+    )
+    assert data["startCase"]["language"] == "en"
+
+
+async def test_start_case_localized_sets_language(fake_llm, gql_client):
+    data = await _gql(
+        gql_client,
+        START_LOCALIZED,
+        {"caseId": "xla", "mode": "practice", "language": "lv"},
+    )
+    session = data["startCaseLocalized"]
+    assert session["language"] == "lv"
+    assert session["phase"] == "history"
+
+    fetched = await _gql(
+        gql_client,
+        "query Q($id: String!) { session(id: $id) { id language } }",
+        {"id": session["id"]},
+    )
+    assert fetched["session"]["language"] == "lv"
 
 
 async def test_start_case_and_session_query(fake_llm, gql_client):
@@ -132,7 +187,7 @@ async def test_send_message_test_order_branch(fake_llm, gql_client):
     assert fake_llm.generate_calls == []
 
 
-async def test_send_message_parent_branch_stores_pending(fake_llm, gql_client):
+async def test_send_message_parent_branch_records_request(fake_llm, gql_client):
     started = await _gql(gql_client, START, {"caseId": "xla", "mode": "practice"})
     sid = started["startCase"]["id"]
 
@@ -146,9 +201,13 @@ async def test_send_message_parent_branch_stores_pending(fake_llm, gql_client):
         {"id": sid, "text": "When did the infections start?"},
     )
     assert data["sendMessage"]["branch"] == "PARENT"
-    session = runtime.get_session_service().get(sid)
-    assert session.pending_parent is not None
-    assert session.pending_parent.branch == "parent"
+    store = runtime.get_session_service()._store
+    events = await store.load_events(sid)
+    requests = [e for e in events if e.type == "ParentReplyRequested"]
+    appended = [e for e in events if e.type == "ParentReplyAppended"]
+    assert len(requests) == 1
+    assert appended == []
+    assert requests[0].data["max_tokens"] == 300
 
 
 async def test_request_exam_and_summary_flow(fake_llm, gql_client):
@@ -178,15 +237,25 @@ async def test_request_exam_and_summary_flow(fake_llm, gql_client):
 
 
 async def test_submit_final_answer_input_and_feedback(fake_llm, gql_client):
-    fake_llm.reply = (
-        '{"diagnosticAccuracy": "correct", "diagnosticComment": "good", '
-        '"wellDone": ["a"], "missing": ["b"], "keyClues": ["c"], '
-        '"reasoningPathway": "path", "managementPoints": ["m"], '
-        '"geneticPoints": ["g"], "revisionTopic": "topic", '
-        '"scores": {"historyTaking": "Good", "examination": "Good", '
-        '"differential": "Good", "testSelection": "Good", '
-        '"interpretation": "Good", "management": "Good"}}'
-    )
+    fake_llm.structured = {
+        "diagnosticAccuracy": "correct",
+        "diagnosticComment": "good",
+        "wellDone": ["a"],
+        "missing": ["b"],
+        "keyClues": ["c"],
+        "reasoningPathway": "path",
+        "managementPoints": ["m"],
+        "geneticPoints": ["g"],
+        "revisionTopic": "topic",
+        "scores": {
+            "historyTaking": "Good",
+            "examination": "Good",
+            "differential": "Good",
+            "testSelection": "Good",
+            "interpretation": "Good",
+            "management": "Good",
+        },
+    }
     started = await _gql(gql_client, START, {"caseId": "xla", "mode": "practice"})
     sid = started["startCase"]["id"]
 
@@ -222,7 +291,7 @@ async def test_submit_final_answer_input_and_feedback(fake_llm, gql_client):
     assert result["feedback"]["diagnosticAccuracy"] == "correct"
     assert result["feedback"]["wellDone"] == ["a"]
     assert result["feedback"]["scores"]["management"] == "Good"
-    assert fake_llm.generate_calls[0]["max_tokens"] == 1500
+    assert fake_llm.structured_calls[0]["max_tokens"] == 1500
 
 
 async def test_request_hint_returns_string(fake_llm, gql_client):
@@ -268,3 +337,55 @@ async def test_send_message_unknown_session_errors(fake_llm, gql_client):
     )
     payload = resp.json()
     assert payload.get("errors")
+
+
+async def test_attempt_query_returns_typed_event_timeline(fake_llm, gql_client):
+    started = await _gql(gql_client, START, {"caseId": "xla", "mode": "practice"})
+    sid = started["startCase"]["id"]
+    await _gql(
+        gql_client,
+        """
+        mutation Send($id: String!, $text: String!) {
+          sendMessage(sessionId: $id, text: $text) { branch }
+        }
+        """,
+        {"id": sid, "text": "order a CBC"},
+    )
+
+    data = await _gql(
+        gql_client,
+        """
+        query A($id: String!) {
+          attempt(id: $id) {
+            id caseId phase status
+            events {
+              __typename seq type
+              ... on TestOrderedEvent { key }
+              ... on PhaseChangedEvent { fromPhase toPhase }
+            }
+          }
+        }
+        """,
+        {"id": sid},
+    )
+    attempt = data["attempt"]
+    assert attempt["id"] == sid
+    assert attempt["caseId"] == "xla"
+    assert attempt["phase"] == "tests"
+    typenames = [e["__typename"] for e in attempt["events"]]
+    assert "SessionStartedEvent" in typenames
+    assert "TestOrderedEvent" in typenames
+    ordered = [
+        e["key"] for e in attempt["events"] if e["__typename"] == "TestOrderedEvent"
+    ]
+    assert ordered == ["CBC"]
+
+
+async def test_attempt_query_unknown_is_forbidden_for_non_owner(fake_llm, gql_client):
+    resp = await gql_client.post(
+        "/graphql",
+        json={"query": 'query { attempt(id: "nope") { id } }'},
+    )
+    payload = resp.json()
+    assert payload.get("errors")
+    assert "Forbidden" in payload["errors"][0]["message"]

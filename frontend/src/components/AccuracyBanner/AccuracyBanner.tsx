@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import styles from "./AccuracyBanner.module.css";
 
 export type DiagnosticAccuracy = "correct" | "partially_correct" | "incorrect";
@@ -13,16 +14,17 @@ function toneClass(accuracy: DiagnosticAccuracy): string {
   return styles.incorrect;
 }
 
-function headline(accuracy: DiagnosticAccuracy): string {
-  if (accuracy === "correct") return "✓ Correct diagnosis";
-  if (accuracy === "partially_correct") return "◐ Partially correct";
-  return "○ Incorrect diagnosis";
-}
-
 export function AccuracyBanner({ accuracy, comment }: AccuracyBannerProps) {
+  const { t } = useTranslation();
+  const headline =
+    accuracy === "correct"
+      ? t("feedback.accuracyCorrect")
+      : accuracy === "partially_correct"
+        ? t("feedback.accuracyPartial")
+        : t("feedback.accuracyIncorrect");
   return (
     <div className={[styles.banner, toneClass(accuracy)].join(" ")}>
-      <div className={styles.headline}>{headline(accuracy)}</div>
+      <div className={styles.headline}>{headline}</div>
       <div className={styles.comment}>{comment}</div>
     </div>
   );

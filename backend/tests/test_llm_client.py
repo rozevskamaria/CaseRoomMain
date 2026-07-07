@@ -66,6 +66,41 @@ async def test_generate_returns_empty_string_when_no_text_block():
     assert result == ""
 
 
+async def test_generate_structured_parses_first_text_block():
+    schema = {"type": "object"}
+    block = SimpleNamespace(type="text", text='{"diagnosticAccuracy": "correct"}')
+    response = SimpleNamespace(content=[block])
+    create = AsyncMock(return_value=response)
+    fake = make_client(create=create)
+    llm = LLMClient(client=fake)
+
+    system = "feedback system"
+    messages = [{"role": "user", "content": "answer"}]
+    result = await llm.generate_structured(system, messages, schema, 1500)
+
+    assert result == {"diagnosticAccuracy": "correct"}
+    create.assert_awaited_once_with(
+        model="claude-sonnet-4-6",
+        max_tokens=1500,
+        system=system,
+        messages=messages,
+        output_config={"format": {"type": "json_schema", "schema": schema}},
+    )
+
+
+async def test_generate_structured_returns_empty_dict_when_no_text_block():
+    block = SimpleNamespace(type="tool_use")
+    response = SimpleNamespace(content=[block])
+    fake = make_client(create=AsyncMock(return_value=response))
+    llm = LLMClient(client=fake)
+
+    result = await llm.generate_structured(
+        "sys", [{"role": "user", "content": "hi"}], {"type": "object"}, 1500
+    )
+
+    assert result == {}
+
+
 async def test_stream_yields_text_deltas():
     def stream(**kwargs):
         return FakeStreamContext(["a", "b", "c"])

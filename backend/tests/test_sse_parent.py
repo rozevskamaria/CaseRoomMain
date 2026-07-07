@@ -44,18 +44,25 @@ def fake_llm():
 
 
 @pytest_asyncio.fixture
-async def http_client():
+async def http_client(student_principal):
+    from tests.conftest import auth_cookies
+
     transport = ASGITransport(app=app)
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        cookies=auth_cookies(student_principal),
+    ) as ac:
         yield ac
 
 
-def _prepare_parent_session():
+async def _prepare_parent_session(owner_id=None):
     service = runtime.get_session_service()
-    session = service.start_case("xla", "practice")
-    result = service.send_message(session, "When did the infections start?")
+    session = await service.start_case("xla", "practice", student_id=owner_id)
+    result, session = await service.send_message(
+        session.id, "When did the infections start?"
+    )
     assert result.branch == "parent"
-    session.pending_parent = result
     return session
 
 
@@ -69,8 +76,10 @@ def _deltas(body):
     return out
 
 
-async def test_sse_parent_streams_and_appends_reply(fake_llm, http_client):
-    session = _prepare_parent_session()
+async def test_sse_parent_streams_and_appends_reply(
+    fake_llm, http_client, student_principal
+):
+    session = await _prepare_parent_session(student_principal["user_id"])
 
     resp = await http_client.get(f"/sse/parent/{session.id}")
     assert resp.status_code == 200
@@ -83,10 +92,10 @@ async def test_sse_parent_streams_and_appends_reply(fake_llm, http_client):
     assert fake_llm.stream_calls[0]["max_tokens"] == 300
     assert fake_llm.stream_calls[0]["system"] == _expected_parent_prompt()
 
-    parent_msgs = [m for m in session.messages if m.type == "parent"]
+    refreshed = await runtime.get_session_service().get(session.id)
+    parent_msgs = [m for m in refreshed.messages if m.type == "parent"]
     assert len(parent_msgs) == 1
     assert parent_msgs[0].text == "Infections started at six months."
-    assert session.pending_parent is None
 
 
 def _expected_parent_prompt():
@@ -95,21 +104,33 @@ def _expected_parent_prompt():
     return get_case("xla").parent_prompt
 
 
-async def test_sse_parent_unknown_session_404(fake_llm, http_client):
-    resp = await http_client.get("/sse/parent/does-not-exist")
+async def test_sse_parent_unknown_session_404(fake_llm, admin_principal):
+    from tests.conftest import auth_cookies
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(
+        transport=transport,
+        base_url="http://test",
+        cookies=auth_cookies(admin_principal),
+    ) as ac:
+        resp = await ac.get("/sse/parent/does-not-exist")
     assert resp.status_code == 404
 
 
-async def test_sse_parent_no_pending_returns_409(fake_llm, http_client):
+async def test_sse_parent_no_pending_returns_409(
+    fake_llm, http_client, student_principal
+):
     service = runtime.get_session_service()
-    session = service.start_case("xla", "practice")
+    session = await service.start_case(
+        "xla", "practice", student_id=student_principal["user_id"]
+    )
 
     resp = await http_client.get(f"/sse/parent/{session.id}")
     assert resp.status_code == 409
 
 
-async def test_sse_parent_consumed_once(fake_llm, http_client):
-    session = _prepare_parent_session()
+async def test_sse_parent_consumed_once(fake_llm, http_client, student_principal):
+    session = await _prepare_parent_session(student_principal["user_id"])
 
     first = await http_client.get(f"/sse/parent/{session.id}")
     assert first.status_code == 200

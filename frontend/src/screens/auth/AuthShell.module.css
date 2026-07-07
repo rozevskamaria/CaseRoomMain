@@ -1,0 +1,121 @@
+.root {
+  font-family: var(--font-serif);
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--text);
+}
+
+.column {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.topBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
+}
+
+.header {
+  margin-bottom: 28px;
+}
+
+.logo {
+  font-size: 13px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 8px;
+}
+
+.heroTitle {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1.15;
+  margin-bottom: 8px;
+}
+
+.heroSub {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--teal);
+  margin: 0;
+}
+
+.cardHeading {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.intro {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.altRow {
+  text-align: center;
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.spinnerRoot {
+  font-family: var(--font-serif);
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.spinner {
+  width: 26px;
+  height: 26px;
+  border: 3px solid var(--border);
+  border-top-color: var(--navy);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 12px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.devBlock {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.devLabel {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dim);
+}

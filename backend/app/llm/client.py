@@ -1,9 +1,29 @@
 from __future__ import annotations
 
+import json
 from collections.abc import AsyncIterator, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.core.config import Settings, get_settings
+
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    input: dict[str, Any]
+
+
+@dataclass
+class ToolRunResult:
+    text: str = ""
+    tool_calls: list[ToolCall] = field(default_factory=list)
+    refused: bool = False
+
+    @property
+    def first_tool_call(self) -> ToolCall | None:
+        return self.tool_calls[0] if self.tool_calls else None
 
 
 class LLMClient:
@@ -36,6 +56,60 @@ class LLMClient:
             if block.type == "text":
                 return block.text
         return ""
+
+    async def generate_structured(
+        self,
+        system: str,
+        messages: Sequence[dict[str, str]],
+        schema: dict[str, Any],
+        max_tokens: int,
+    ) -> dict[str, Any]:
+        response = await self.client.messages.create(
+            model=self.model,
+            max_tokens=max_tokens,
+            system=system,
+            messages=messages,
+            output_config={"format": {"type": "json_schema", "schema": schema}},
+        )
+        for block in response.content:
+            if block.type == "text":
+                return json.loads(block.text)
+        return {}
+
+    async def generate_with_tools(
+        self,
+        system: str,
+        messages: Sequence[dict[str, Any]],
+        tools: Sequence[dict[str, Any]],
+        max_tokens: int = 512,
+        max_iterations: int = 5,
+    ) -> ToolRunResult:
+        convo = list(messages)
+        text = ""
+        for _ in range(max_iterations):
+            response = await self.client.messages.create(
+                model=self.model,
+                max_tokens=max_tokens,
+                system=system,
+                messages=convo,
+                tools=list(tools),
+                tool_choice={"type": "any", "disable_parallel_tool_use": True},
+            )
+            if getattr(response, "stop_reason", None) == "refusal":
+                return ToolRunResult(text="", tool_calls=[], refused=True)
+            if getattr(response, "stop_reason", None) == "pause_turn":
+                convo.append({"role": "assistant", "content": response.content})
+                continue
+            calls: list[ToolCall] = []
+            for block in response.content:
+                if block.type == "tool_use":
+                    calls.append(
+                        ToolCall(id=block.id, name=block.name, input=dict(block.input))
+                    )
+                elif block.type == "text":
+                    text = block.text
+            return ToolRunResult(text=text, tool_calls=calls, refused=False)
+        return ToolRunResult(text=text, tool_calls=[], refused=False)
 
     async def stream(
         self,

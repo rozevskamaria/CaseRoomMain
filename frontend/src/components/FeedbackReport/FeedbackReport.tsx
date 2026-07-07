@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { AccuracyBanner } from "../AccuracyBanner";
 import type { DiagnosticAccuracy } from "../AccuracyBanner";
 import { ScoreGrid } from "../ScoreGrid";
@@ -23,9 +24,10 @@ export interface FeedbackReportProps {
   feedback: Feedback;
   caseTitle: string;
   mode: string;
-  onSeeNext: () => void;
-  onReflect: () => void;
-  onBrowse: () => void;
+  onSeeNext?: () => void;
+  onReflect?: () => void;
+  onBrowse?: () => void;
+  showActions?: boolean;
 }
 
 export function FeedbackReport({
@@ -35,10 +37,12 @@ export function FeedbackReport({
   onSeeNext,
   onReflect,
   onBrowse,
+  showActions = true,
 }: FeedbackReportProps) {
+  const { t } = useTranslation();
   return (
     <div className={styles.wrap}>
-      <h2 className={styles.title}>Feedback Report</h2>
+      <h2 className={styles.title}>{t("feedback.title")}</h2>
       <div className={styles.subtitle}>{caseTitle}</div>
 
       <AccuracyBanner
@@ -46,12 +50,12 @@ export function FeedbackReport({
         comment={feedback.diagnosticComment}
       />
 
-      <h3 className={styles.overviewHeading}>Performance overview</h3>
+      <h3 className={styles.overviewHeading}>{t("feedback.overviewHeading")}</h3>
       <ScoreGrid scores={feedback.scores ?? {}} />
 
       <FeedbackList
         className={styles.wellDoneSection}
-        title="✓ What you did well"
+        title={t("feedback.wellDoneTitle")}
         items={feedback.wellDone ?? []}
         variant="strip"
         tone="teal"
@@ -60,7 +64,7 @@ export function FeedbackReport({
       {(feedback.missing ?? []).length > 0 && (
         <FeedbackList
           className={styles.section}
-          title="◎ Areas to develop"
+          title={t("feedback.areasToDevelopTitle")}
           items={feedback.missing}
           variant="strip"
           tone="amber"
@@ -69,7 +73,7 @@ export function FeedbackReport({
 
       <FeedbackList
         className={styles.section}
-        title="🔍 Key diagnostic clues in this case"
+        title={t("feedback.keyCluesTitle")}
         items={feedback.keyClues ?? []}
         variant="boxedBullets"
         tone="navy"
@@ -77,7 +81,7 @@ export function FeedbackReport({
 
       <div className={styles.section}>
         <InfoBox
-          title="🧭 Ideal reasoning pathway"
+          title={t("feedback.reasoningTitle")}
           text={feedback.reasoningPathway}
           tone="surface"
         />
@@ -85,13 +89,13 @@ export function FeedbackReport({
 
       <div className={styles.twoColGrid}>
         <FeedbackList
-          title="💊 Management learning points"
+          title={t("feedback.managementTitle")}
           items={feedback.managementPoints ?? []}
           variant="bareBullets"
           tone="navyLight"
         />
         <FeedbackList
-          title="🧬 Genetic counselling points"
+          title={t("feedback.geneticTitle")}
           items={feedback.geneticPoints ?? []}
           variant="bareBullets"
           tone="teal"
@@ -100,18 +104,20 @@ export function FeedbackReport({
 
       <div className={styles.section}>
         <InfoBox
-          title="📖 Suggested revision"
+          title={t("feedback.revisionTitle")}
           text={feedback.revisionTopic}
           tone="navyPale"
         />
       </div>
 
-      <FeedbackActions
-        mode={mode}
-        onSeeNext={onSeeNext}
-        onReflect={onReflect}
-        onBrowse={onBrowse}
-      />
+      {showActions && (
+        <FeedbackActions
+          mode={mode}
+          onSeeNext={onSeeNext ?? (() => {})}
+          onReflect={onReflect ?? (() => {})}
+          onBrowse={onBrowse ?? (() => {})}
+        />
+      )}
     </div>
   );
 }

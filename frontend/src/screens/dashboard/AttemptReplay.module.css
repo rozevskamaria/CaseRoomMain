@@ -1,0 +1,53 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.caseTitle {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--teal);
+}
+
+.readOnlyBanner {
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--navy-pale);
+  border: 1px solid var(--tutor-border);
+  color: var(--navy);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.empty {
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px 0;
+}
+
+.notFound {
+  font-family: var(--font-serif);
+  font-size: 15px;
+  color: var(--muted);
+  padding: 48px 24px;
+  text-align: center;
+}

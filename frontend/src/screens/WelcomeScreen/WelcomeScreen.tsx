@@ -1,38 +1,33 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button";
 import { Callout } from "../../components/Callout";
+import { LocaleSwitcher } from "../../components/LocaleSwitcher";
 import { Pill } from "../../components/Pill";
 import { CASE_LIST } from "../../content/caseList";
 import type { CaseMeta } from "../../content/caseList";
+import type { Locale } from "../../i18n/types";
 import type { Mode } from "../../state/uiState";
 import styles from "./WelcomeScreen.module.css";
 
 export interface WelcomeScreenProps {
   cases?: CaseMeta[];
   mode: Mode;
+  language: Locale;
   seenCases: string[];
   allDone: boolean;
   showBrowse: boolean;
   onSetMode: (mode: Mode) => void;
+  onSetLanguage: (language: Locale) => void;
   onStartRandom: () => void;
   onStartCase: (caseId: string) => void;
   onToggleBrowse: () => void;
   onResetProgress: () => void;
+  onLogout?: () => void;
 }
 
-const STEPS: [string, string][] = [
-  ["1", "A patient is presented to you with a brief clinical description, similar to what you might observe when they first enter your consulting room."],
-  ["2", "You take the history by asking questions directly to the parent or patient. They will only provide information in response to the questions you ask, so the more targeted your questions are, the more relevant information you will gather."],
-  ["3", "You may request a physical examination at any time by specifying what you would like to examine."],
-  ["4", "You can order investigations in the Investigations tab, shown in the panel above. Results will appear as they would in clinical practice. You may interpret the findings and use them to develop a differential diagnosis."],
-  ["5", "When you feel ready, submit your final diagnosis and management plan. The simulator will then provide structured formative feedback on your clinical reasoning."],
-  ["6", "Each patient you see in a session will be different. The same case will not appear again until you have worked through all available cases."],
-];
+const STEP_IDS = ["1", "2", "3", "4", "5", "6"] as const;
 
-const MODES: [Mode, string, string][] = [
-  ["practice", "With clinical guidance", "The tutor gives gentle prompts when you submit answers. Contextual hints available any time. Recommended for first attempts."],
-  ["exam", "Independent — minimal guidance", "Fewer proactive prompts from the tutor. Contextual hints still available if you get stuck. Full structured feedback at the end."],
-  ["reflection", "Reflection mode", "After completing a case, the simulator asks five reflective questions about your reasoning. Best used after practice or exam mode."],
-];
+const MODE_IDS: Mode[] = ["practice", "exam", "reflection"];
 
 function difficultyTone(difficulty: string): "adv" | "int" | "beg" {
   if (difficulty === "Advanced") return "adv";
@@ -43,52 +38,64 @@ function difficultyTone(difficulty: string): "adv" | "int" | "beg" {
 export function WelcomeScreen({
   cases = CASE_LIST,
   mode,
+  language,
   seenCases,
   allDone,
   showBrowse,
   onSetMode,
+  onSetLanguage,
   onStartRandom,
   onStartCase,
   onToggleBrowse,
   onResetProgress,
+  onLogout,
 }: WelcomeScreenProps) {
+  const { t } = useTranslation();
   const unseenCount = cases.filter((c) => !seenCases.includes(c.id)).length;
   const completedCount = seenCases.length;
 
   const ctaLabel =
     unseenCount === cases.length
-      ? "See next patient →"
-      : `See next patient → (${unseenCount} remaining)`;
+      ? t("welcome.ctaBase")
+      : t("welcome.ctaRemaining", { count: unseenCount });
 
   return (
     <div className={styles.root}>
       <div className={styles.welcome}>
         <div className={styles.header}>
-          <div className={styles.logo}>Rīga Stradiņš University · Faculty of Medicine</div>
-          <h1 className={styles.heroTitle}>Clinical Immunology</h1>
-          <div className={styles.heroSub}>Immunology Department — Outpatient Clinic Simulator</div>
-          <p className={styles.intro}>
-            You are a junior doctor working a session at the Immunology Department outpatient clinic. Patients with suspected inborn errors of immunity have been referred to you. Your task is to take a thorough history, examine the patient, order appropriate investigations, form a differential diagnosis, and propose a management plan.
-          </p>
+          <div className={styles.topBar}>
+            <LocaleSwitcher value={language} onChange={onSetLanguage} />
+            {onLogout && (
+              <Button variant="ghost" style={{ fontSize: "12px" }} onClick={onLogout}>
+                {t("welcome.signOut")}
+              </Button>
+            )}
+          </div>
+          <div className={styles.logo}>{t("welcome.logoLine")}</div>
+          <h1 className={styles.heroTitle}>{t("welcome.heroTitle")}</h1>
+          <div className={styles.heroSub}>{t("welcome.heroSub")}</div>
+          <p className={styles.intro}>{t("welcome.intro")}</p>
         </div>
 
         <div className={styles.card}>
-          <div className={styles.cardHeading}>How the session works</div>
-          {STEPS.map(([n, text]) => (
+          <div className={styles.cardHeading}>{t("welcome.howItWorksHeading")}</div>
+          {STEP_IDS.map((n) => (
             <div key={n} className={styles.stepRow}>
               <div className={styles.stepNumber}>{n}</div>
-              <div className={styles.stepText}>{text}</div>
+              <div className={styles.stepText}>{t(`welcome.steps.${n}`)}</div>
             </div>
           ))}
         </div>
 
         <Callout tone="teal" style={{ marginBottom: 28 }}>
-          🌿 <strong>Safe learning environment.</strong> You are encouraged to form hypotheses, make mistakes, change your mind, and learn from the consequences. There are no wrong questions. The goal is to practise clinical reasoning, not to guess the correct answer immediately.
+          {t("welcome.safetyEmoji")}
+          <strong>{t("welcome.safetyStrong")}</strong>
+          {t("welcome.safetyBody")}
         </Callout>
 
         <div className={styles.modeBlock}>
-          <div className={styles.cardHeading}>Choose your session mode</div>
-          {MODES.map(([m, label, desc]) => (
+          <div className={styles.cardHeading}>{t("welcome.modeHeading")}</div>
+          {MODE_IDS.map((m) => (
             <div
               key={m}
               className={`${styles.modeCard}${mode === m ? ` ${styles.modeCardActive}` : ""}`}
@@ -97,8 +104,8 @@ export function WelcomeScreen({
               <div className={styles.modeCardInner}>
                 <div className={`${styles.modeRadio}${mode === m ? ` ${styles.modeRadioActive}` : ""}`} />
                 <div>
-                  <div className={styles.modeLabel}>{label}</div>
-                  <div className={styles.modeDesc}>{desc}</div>
+                  <div className={styles.modeLabel}>{t(`welcome.modes.${m}Label`)}</div>
+                  <div className={styles.modeDesc}>{t(`welcome.modes.${m}Desc`)}</div>
                 </div>
               </div>
             </div>
@@ -108,9 +115,12 @@ export function WelcomeScreen({
         {completedCount > 0 && (
           <div className={styles.progress}>
             <div>
-              <span className={styles.progressLabel}>Session progress: </span>
+              <span className={styles.progressLabel}>{t("welcome.progressLabel")}</span>
               <span className={styles.progressCount}>
-                {completedCount} of {cases.length} cases seen
+                {t("welcome.progressCount", {
+                  completed: completedCount,
+                  total: cases.length,
+                })}
               </span>
               <div className={styles.pips}>
                 {cases.map((c) => (
@@ -123,14 +133,16 @@ export function WelcomeScreen({
               </div>
             </div>
             <Button variant="ghost" style={{ fontSize: "12px" }} onClick={onResetProgress}>
-              Reset
+              {t("welcome.reset")}
             </Button>
           </div>
         )}
 
         {allDone && (
           <Callout tone="amber" style={{ padding: "14px 18px", marginBottom: 20 }}>
-            🎉 <strong>You have seen all {cases.length} available cases.</strong> Reset your progress to start again, or browse individual cases below.
+            {t("welcome.allDoneEmoji")}
+            <strong>{t("welcome.allDoneStrong", { total: cases.length })}</strong>
+            {t("welcome.allDoneBody")}
           </Callout>
         )}
 
@@ -139,20 +151,18 @@ export function WelcomeScreen({
           onClick={onStartRandom}
           disabled={allDone}
         >
-          {allDone ? "All cases completed" : ctaLabel}
+          {allDone ? t("welcome.ctaAllDone") : ctaLabel}
         </button>
 
         <div className={styles.browseToggleWrap}>
           <Button variant="ghost" style={{ fontSize: "13px" }} onClick={onToggleBrowse}>
-            {showBrowse ? "Hide case list ↑" : "Browse cases individually ↓"}
+            {showBrowse ? t("welcome.browseHide") : t("welcome.browseShow")}
           </Button>
         </div>
 
         {showBrowse && (
           <div className={styles.browseList}>
-            <div className={styles.browseNote}>
-              Note: selecting a specific case manually will not mark it as seen in your progress.
-            </div>
+            <div className={styles.browseNote}>{t("welcome.browseNote")}</div>
             {cases.map((c) => (
               <div
                 key={c.id}
@@ -167,7 +177,9 @@ export function WelcomeScreen({
                     </div>
                   </div>
                   <div className={styles.caseTags}>
-                    {seenCases.includes(c.id) && <span className={styles.seenBadge}>✓ seen</span>}
+                    {seenCases.includes(c.id) && (
+                      <span className={styles.seenBadge}>{t("welcome.seenBadge")}</span>
+                    )}
                     <Pill tone="difficulty" value={difficultyTone(c.difficulty)}>
                       {c.difficulty}
                     </Pill>

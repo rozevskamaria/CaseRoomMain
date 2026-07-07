@@ -15,6 +15,12 @@
   margin-bottom: 32px;
 }
 
+.topBar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 4px;
+}
+
 .logo {
   font-size: 13px;
   letter-spacing: 0.2em;

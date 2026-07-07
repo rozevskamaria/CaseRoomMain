@@ -1,0 +1,49 @@
+.card {
+  padding: 18px;
+}
+
+.heading {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.checking {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.banner {
+  font-size: 14px;
+  line-height: 1.5;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+}
+
+.teal {
+  background: var(--teal-pale);
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.amber {
+  background: var(--amber-pale);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+.red {
+  background: var(--red-pale);
+  border-color: var(--red);
+  color: var(--red);
+}

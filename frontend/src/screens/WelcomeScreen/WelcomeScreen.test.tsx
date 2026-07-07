@@ -7,10 +7,12 @@ import { CASE_LIST } from "../../content/caseList";
 function baseProps() {
   return {
     mode: "practice" as const,
+    language: "en" as const,
     seenCases: [] as string[],
     allDone: false,
     showBrowse: false,
     onSetMode: vi.fn(),
+    onSetLanguage: vi.fn(),
     onStartRandom: vi.fn(),
     onStartCase: vi.fn(),
     onToggleBrowse: vi.fn(),

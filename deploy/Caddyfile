@@ -1,0 +1,21 @@
+{
+	email admin@caseroom.tech
+}
+
+caseroom.tech {
+	@api path /graphql* /sse/*
+	handle @api {
+		reverse_proxy backend:8000
+	}
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+api.caseroom.tech {
+	reverse_proxy backend:8000
+}
+
+www.caseroom.tech {
+	redir https://caseroom.tech{uri} permanent
+}

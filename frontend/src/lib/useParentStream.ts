@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
-const DEFAULT_SSE_BASE = "http://localhost:8000";
+const DEFAULT_SSE_BASE = "";
 
 interface ParentDeltaFrame {
   delta: string;
@@ -51,7 +51,9 @@ export function useParentStream(callbacks: ParentStreamCallbacks): ParentStreamH
       close();
       accumulatedRef.current = "";
 
-      const source = new EventSource(parentStreamUrl(sessionId));
+      const source = new EventSource(parentStreamUrl(sessionId), {
+        withCredentials: true,
+      });
       sourceRef.current = source;
 
       source.onmessage = (event: MessageEvent<string>) => {
@@ -75,5 +77,5 @@ export function useParentStream(callbacks: ParentStreamCallbacks): ParentStreamH
 
   useEffect(() => close, [close]);
 
-  return { open, close };
+  return useMemo(() => ({ open, close }), [open, close]);
 }

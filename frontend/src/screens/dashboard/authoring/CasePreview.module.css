@@ -1,0 +1,71 @@
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0;
+}
+
+.meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.patient {
+  font-size: 14px;
+  color: var(--text-light);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--slate);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.prose {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+.code {
+  font-family: var(--font-mono, monospace);
+  font-size: 12.5px;
+  color: var(--text-light);
+  background: var(--slate-pale);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.labs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.list {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.55;
+}

@@ -1,12 +1,32 @@
 from app.schemas.case import Case
 
+LANGUAGE_DIRECTIVE_LV = (
+    "LANGUAGE: Respond entirely in Latvian (latviešu valodā). All prose you "
+    "generate must be in Latvian."
+)
 
-def make_tutor_prompt(case: Case, phase: str, mode: str) -> str:
+
+def language_directive(language: str) -> str:
+    if language == "lv":
+        return LANGUAGE_DIRECTIVE_LV
+    return ""
+
+
+def _with_directive(prompt: str, language: str) -> str:
+    directive = language_directive(language)
+    if not directive:
+        return prompt
+    return f"{prompt}\n\n{directive}"
+
+
+def make_tutor_prompt(
+    case: Case, phase: str, mode: str, language: str = "en"
+) -> str:
     wrong_path_guidance = "\n".join(
         f'- If student says "{k}": {v}' for k, v in case.wrong_paths.items()
     )
     key_clues = "; ".join(case.key_clues)
-    return f"""You are the CLINICAL TUTOR in a medical student training simulation for Inborn Errors of Immunity.
+    base = f"""You are the CLINICAL TUTOR in a medical student training simulation for Inborn Errors of Immunity.
 
 Current case: "{case.title}" — Target diagnosis: {case.target_diagnosis}
 Current phase: {phase}
@@ -29,11 +49,12 @@ WRONG PATH GUIDANCE (use these specific redirects):
 {wrong_path_guidance}
 
 KEY CLUES they should find: {key_clues}"""
+    return _with_directive(base, language)
 
 
-def make_feedback_prompt(case: Case) -> str:
+def make_feedback_prompt(case: Case, language: str = "en") -> str:
     key_clues = "; ".join(case.key_clues)
-    return f"""You are generating STRUCTURED FORMATIVE FEEDBACK for a clinical immunology case simulation.
+    base = f"""You are generating STRUCTURED FORMATIVE FEEDBACK for a clinical immunology case simulation.
 
 Case: "{case.title}"
 Target diagnosis: {case.target_diagnosis}
@@ -62,6 +83,70 @@ Generate feedback in this EXACT JSON structure (no markdown, pure JSON):
     "management": "Excellent|Good|Developing|Needs review"
   }}
 }}"""
+    directive = language_directive(language)
+    if not directive:
+        return base
+    return (
+        f"{base}\n\n{directive}\n"
+        "Write all free-text VALUES in Latvian. Keep every JSON key exactly as "
+        'shown in English. "diagnosticAccuracy" must remain one of '
+        "correct|partially_correct|incorrect and every value under "
+        '"scores" must remain one of Excellent|Good|Developing|Needs review.'
+    )
+
+
+SCORE_ENUM = ["Excellent", "Good", "Developing", "Needs review"]
+
+FEEDBACK_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "diagnosticAccuracy": {
+            "type": "string",
+            "enum": ["correct", "partially_correct", "incorrect"],
+        },
+        "diagnosticComment": {"type": "string"},
+        "wellDone": {"type": "array", "items": {"type": "string"}},
+        "missing": {"type": "array", "items": {"type": "string"}},
+        "keyClues": {"type": "array", "items": {"type": "string"}},
+        "reasoningPathway": {"type": "string"},
+        "managementPoints": {"type": "array", "items": {"type": "string"}},
+        "geneticPoints": {"type": "array", "items": {"type": "string"}},
+        "revisionTopic": {"type": "string"},
+        "scores": {
+            "type": "object",
+            "additionalProperties": False,
+            "properties": {
+                "historyTaking": {"type": "string", "enum": SCORE_ENUM},
+                "examination": {"type": "string", "enum": SCORE_ENUM},
+                "differential": {"type": "string", "enum": SCORE_ENUM},
+                "testSelection": {"type": "string", "enum": SCORE_ENUM},
+                "interpretation": {"type": "string", "enum": SCORE_ENUM},
+                "management": {"type": "string", "enum": SCORE_ENUM},
+            },
+            "required": [
+                "historyTaking",
+                "examination",
+                "differential",
+                "testSelection",
+                "interpretation",
+                "management",
+            ],
+        },
+    },
+    "required": [
+        "diagnosticAccuracy",
+        "diagnosticComment",
+        "wellDone",
+        "missing",
+        "keyClues",
+        "reasoningPathway",
+        "managementPoints",
+        "geneticPoints",
+        "revisionTopic",
+        "scores",
+    ],
+}
 
 
 SUMMARY_EVAL_SUFFIX = "Evaluate this clinical summary from a medical student (3–4 sentences, encouraging, identify what's good and what's missing)."
@@ -71,16 +156,23 @@ DIFFERENTIAL_EVAL_SUFFIX = "Evaluate these differentials from a medical student.
 INTERPRETATION_EVAL_SUFFIX = "Evaluate this test interpretation from a medical student. Highlight what is correct and gently redirect any errors. End with a brief question that nudges them toward the next step. 3–5 sentences. Warm and constructive."
 
 
-def make_summary_eval_prompt(case: Case, mode: str) -> str:
-    return f"{make_tutor_prompt(case, 'summary', mode)}\n\n{SUMMARY_EVAL_SUFFIX}"
+def make_summary_eval_prompt(case: Case, mode: str, language: str = "en") -> str:
+    base = make_tutor_prompt(case, "summary", mode)
+    return _with_directive(f"{base}\n\n{SUMMARY_EVAL_SUFFIX}", language)
 
 
-def make_differential_eval_prompt(case: Case, mode: str) -> str:
-    return f"{make_tutor_prompt(case, 'differential', mode)}\n\n{DIFFERENTIAL_EVAL_SUFFIX}"
+def make_differential_eval_prompt(
+    case: Case, mode: str, language: str = "en"
+) -> str:
+    base = make_tutor_prompt(case, "differential", mode)
+    return _with_directive(f"{base}\n\n{DIFFERENTIAL_EVAL_SUFFIX}", language)
 
 
-def make_interpretation_eval_prompt(case: Case, mode: str) -> str:
-    return f"{make_tutor_prompt(case, 'interpretation', mode)}\n\n{INTERPRETATION_EVAL_SUFFIX}"
+def make_interpretation_eval_prompt(
+    case: Case, mode: str, language: str = "en"
+) -> str:
+    base = make_tutor_prompt(case, "interpretation", mode)
+    return _with_directive(f"{base}\n\n{INTERPRETATION_EVAL_SUFFIX}", language)
 
 
 def build_hint_context(
@@ -132,8 +224,8 @@ HINTS USED SO FAR: {hints_used}
     }
 
 
-def build_hint_system_prompt(context: str) -> str:
-    return f"""You are a supportive clinical tutor giving a CONTEXTUAL HINT to a medical student who is stuck.
+def build_hint_system_prompt(context: str, language: str = "en") -> str:
+    base = f"""You are a supportive clinical tutor giving a CONTEXTUAL HINT to a medical student who is stuck.
 
 {context}
 
@@ -147,9 +239,18 @@ HINT RULES:
 - If tests done but history thin → point to the missing history element
 - If in differential phase → ask a Socratic question that narrows the field
 - Keep the hint to 2–4 sentences. Warm, encouraging tone. Never say "wrong.\""""
+    return _with_directive(base, language)
 
 
 HINT_FALLBACK = "Think about which immune compartment is most likely affected given the type of infections. Then consider which basic blood tests would characterise that compartment."
+
+HINT_FALLBACK_LV = "Padomājiet, kura imūnsistēmas daļa, visticamāk, ir skarta, ņemot vērā infekciju veidu. Tad apsveriet, kuras pamata asins analīzes raksturotu šo daļu."
+
+
+def hint_fallback(language: str) -> str:
+    if language == "lv":
+        return HINT_FALLBACK_LV
+    return HINT_FALLBACK
 
 
 REFLECTION_QS = [
@@ -161,5 +262,6 @@ REFLECTION_QS = [
 ]
 
 
-def build_reflection_summary_prompt(case: Case) -> str:
-    return f'You are summarising a medical student\'s reflection on a clinical case: "{case.title}" (target diagnosis: {case.target_diagnosis}). Write 3–4 supportive sentences summarising their reflective reasoning and identifying 1–2 key learning moments. Encourage continued reflection.'
+def build_reflection_summary_prompt(case: Case, language: str = "en") -> str:
+    base = f'You are summarising a medical student\'s reflection on a clinical case: "{case.title}" (target diagnosis: {case.target_diagnosis}). Write 3–4 supportive sentences summarising their reflective reasoning and identifying 1–2 key learning moments. Encourage continued reflection.'
+    return _with_directive(base, language)

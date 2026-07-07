@@ -15,6 +15,7 @@ function dirtyState(): UiState {
   return {
     screen: "chat",
     mode: "exam",
+    language: "en",
     selectedCaseId: "xla",
     sessionId: "sess-1",
     activeTab: "diagnosis",
@@ -38,6 +39,7 @@ describe("createInitialUiState", () => {
     expect(state).toEqual({
       screen: "welcome",
       mode: "practice",
+      language: "en",
       selectedCaseId: null,
       sessionId: null,
       activeTab: "consultation",

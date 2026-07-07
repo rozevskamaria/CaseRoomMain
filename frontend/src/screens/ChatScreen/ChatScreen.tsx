@@ -1,9 +1,11 @@
 import type { CSSProperties } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "../../components/Button";
 import { ChatHeader } from "../../components/ChatHeader";
 import { HintDropdown } from "../../components/HintDropdown";
 import { HintModal } from "../../components/HintModal";
 import { PhaseStepper } from "../../components/PhaseStepper";
+import { Pill } from "../../components/Pill";
 import { TabBar } from "../../components/TabBar";
 import { PHASE_STEPS } from "../../state/phases";
 import { ConsultationTab } from "../ConsultationTab";
@@ -19,13 +21,13 @@ export interface ChatScreenProps {
   callbacks: ChatCallbacks;
 }
 
-function modeLabel(mode: string): string {
-  if (mode === "practice") return "Practice Mode";
-  if (mode === "exam") return "Exam Mode";
-  return "Reflection Mode";
-}
-
 export function ChatScreen({ session, caseMeta, ui, callbacks }: ChatScreenProps) {
+  const { t } = useTranslation();
+  const modeLabel = (mode: string): string => {
+    if (mode === "practice") return t("chat.modePractice");
+    if (mode === "exam") return t("chat.modeExam");
+    return t("chat.modeReflection");
+  };
   const { phase } = session;
   const labMsgs = session.messages.filter((m) => m.type === "lab");
   const investMsgs = session.messages.filter(
@@ -47,7 +49,9 @@ export function ChatScreen({ session, caseMeta, ui, callbacks }: ChatScreenProps
             onClick={() => callbacks.onShowHintMenu(!ui.showHintMenu)}
             disabled={ui.busy}
           >
-            💡 Need a hint{session.hintsUsed > 0 ? ` (${session.hintsUsed} used)` : ""}
+            {session.hintsUsed > 0
+              ? t("chat.needHintUsed", { count: session.hintsUsed })
+              : t("chat.needHint")}
           </Button>
           <HintDropdown
             open={ui.showHintMenu}
@@ -56,8 +60,11 @@ export function ChatScreen({ session, caseMeta, ui, callbacks }: ChatScreenProps
           />
         </div>
       )}
+      <Pill tone="count">
+        {session.language === "lv" ? t("locale.lv") : t("locale.en")}
+      </Pill>
       <Button variant="ghost" onClick={callbacks.onExit}>
-        ← Exit to clinic
+        {t("chat.exitToClinic")}
       </Button>
     </>
   );
@@ -74,9 +81,9 @@ export function ChatScreen({ session, caseMeta, ui, callbacks }: ChatScreenProps
 
       <TabBar
         tabs={[
-          { key: "consultation", label: "💬 Consultation" },
-          { key: "investigations", label: "🔬 Investigations", badge: labMsgs.length },
-          { key: "diagnosis", label: "📋 Final Diagnosis" },
+          { key: "consultation", label: t("chat.tabConsultation") },
+          { key: "investigations", label: t("chat.tabInvestigations"), badge: labMsgs.length },
+          { key: "diagnosis", label: t("chat.tabDiagnosis") },
         ]}
         active={ui.activeTab}
         onChange={(key) => callbacks.onSetTab(key as ChatUi["activeTab"])}

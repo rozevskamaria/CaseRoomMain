@@ -1,0 +1,77 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.headRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 0 0 4px;
+}
+
+.intro {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 460px;
+}
+
+.createCard {
+  padding: 18px;
+}
+
+.createHeading {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--navy);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.formBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cohortCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+}
+
+.cohortMain {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cohortName {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--navy);
+}
+
+.cohortYear {
+  font-size: 13px;
+  color: var(--muted);
+}

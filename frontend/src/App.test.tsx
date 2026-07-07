@@ -5,7 +5,7 @@ import App from "./App";
 import {
   CaseQuery,
   SessionQuery,
-  StartCaseMutation,
+  StartCaseLocalizedMutation,
 } from "./graphql/operations";
 import { resetSeenCases } from "./state/seenCases";
 
@@ -19,6 +19,7 @@ const sessionFields = {
   caseId: "xla",
   phase: "history",
   mode: "practice",
+  language: "en",
   hintsUsed: 0,
   examDone: false,
   summary: "",
@@ -58,8 +59,11 @@ const caseData = {
 };
 
 const startMock = {
-  request: { query: StartCaseMutation, variables: { caseId: "xla", mode: "practice" } },
-  result: { data: { __typename: "Mutation", startCase: sessionFields } },
+  request: {
+    query: StartCaseLocalizedMutation,
+    variables: { caseId: "xla", mode: "practice", language: "en" },
+  },
+  result: { data: { __typename: "Mutation", startCaseLocalized: sessionFields } },
 };
 const sessionMock = {
   request: { query: SessionQuery, variables: { id: "sess-1" } },
