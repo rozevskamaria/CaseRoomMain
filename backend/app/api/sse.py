@@ -75,7 +75,7 @@ async def sse_parent(session_id: str, request: Request) -> StreamingResponse:
         user = await auth_runtime.resolve_current_user(sid, None)
         owner_id = await service.get_attempt_owner(session_id)
         _enforce_owner(user, owner_id)
-        events = await service._store.load_events(session_id)
+        events = await service.events(session_id)
         if not events:
             raise HTTPException(status_code=404, detail="Unknown session")
         pending = _pending_parent_request(events)
@@ -106,7 +106,7 @@ async def sse_parent(session_id: str, request: Request) -> StreamingResponse:
         user = await auth_runtime.resolve_current_user(sid, session)
         owner_id = await service.get_attempt_owner(session_id)
         _enforce_owner(user, owner_id)
-        events = await service._store.load_events(session_id)
+        events = await service.events(session_id)
         if not events:
             raise HTTPException(status_code=404, detail="Unknown session")
         pending = _pending_parent_request(events)

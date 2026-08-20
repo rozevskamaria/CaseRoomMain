@@ -58,6 +58,11 @@ class CaseRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_case_by_slug(self, slug: str) -> CaseModel | None:
+        return await self._session.scalar(
+            select(CaseModel).where(CaseModel.slug == slug)
+        )
+
     async def get_case_version(self, slug: str) -> CaseVersion | None:
         stmt = (
             select(CaseVersion)

@@ -1,8 +1,9 @@
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, it, expect } from "vitest";
 import { parseLabText, flagRow, type LabLine } from "./labText";
 
-const FIXTURE_DIR = "/Users/pavelsmironovs/Desktop/CaseRoom/backend/tests/fixtures/parity";
+const FIXTURE_DIR = resolve(process.cwd(), "../backend/tests/fixtures/parity");
 
 interface ParseFixture {
   input: string;

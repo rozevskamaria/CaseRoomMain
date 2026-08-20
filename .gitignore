@@ -21,3 +21,5 @@ frontend/src/gql/
 
 .playwright-mcp/
 docker-compose.override.yml
+
+CLAUDE.md

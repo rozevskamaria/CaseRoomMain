@@ -10,7 +10,7 @@ from app.api import runtime
 from app.api.graphql import graphql_router
 from app.api.sse import router as sse_router
 from app.auth import runtime as auth_runtime
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_production_settings
 from app.core.logging import configure_logging
 from app.services.stores import build_db_service
 
@@ -50,6 +50,7 @@ async def _bootstrap_admin() -> None:
 def create_app() -> FastAPI:
     configure_logging()
     settings = get_settings()
+    validate_production_settings(settings)
 
     if settings.APP_ENV == "production":
         _register_db_backend()

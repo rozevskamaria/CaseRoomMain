@@ -11,13 +11,11 @@ Students take history from an AI parent, order investigations, submit differenti
 CaseRoom simulates the immunology outpatient consultation room. A clinical case opens with a brief description, a parent enters, and the student works through the case using four parallel tabs:
 
 - 🗣 **History** — live conversation with the AI parent, who only reveals information when directly asked
-- 🔬 **Investigations** — order any test in plain language; results appear instantly from a hardcoded case panel
+- 🔬 **Investigations** — order any test in plain language; results appear from a clinician-authored case panel
 - 📋 **Differentials** — submit and revise differential diagnoses; wrong paths trigger case-specific redirects
 - ✅ **Final Answer** — structured submission covering diagnosis, management, genetic counselling, and explanation to the family
 
-A contextual 💡 hint system tracks what the student has asked and ordered, and gives personalised guidance without revealing the diagnosis.
-
----
+A contextual 💡 hint system tracks what the student has asked and ordered, and gives personalised guidance without revealing the diagnosis. The interface is available in English and Latvian.
 
 ## Cases
 
@@ -30,149 +28,103 @@ A contextual 💡 hint system tracks what the student has asked and ordered, and
 | THI | Toms, 10mo boy | Transient Hypogammaglobulinaemia of Infancy | Beginner |
 | SCID | Rihards, 2.5mo boy | Artemis SCID + maternal T-cell engraftment + BCGitis | Advanced |
 
-Each case includes a full parent script with gated information, 10–20 investigation results with flagged abnormal values, case-specific wrong path redirects, model management, and model genetic counselling used for feedback generation.
+Each case includes a full parent script with gated information, investigation results with flagged abnormal values, case-specific wrong-path redirects, model management, and model genetic counselling used for feedback generation. New cases can be authored, versioned, and published by educators directly in the application.
 
----
+## Architecture
 
-## Tech Stack
+CaseRoom is a two-service web application:
 
-- **React 18** (JSX, hooks)
-- **Anthropic Claude API** (`claude-sonnet-4-20250514`) for parent voice, tutor feedback, and hint generation
-- **Vite** for development and production build
-- **Sucrase** for pre-compiling JSX to plain JavaScript for the standalone HTML build
+- **Backend** — FastAPI (Python 3.12), GraphQL via Strawberry at `/graphql`, a plain-HTTP SSE endpoint for streaming AI parent replies, async SQLAlchemy 2.0 + Alembic on PostgreSQL, Redis for sessions and rate limiting, and an ARQ worker for background jobs. Every student attempt is persisted as an append-only event log and replayed for review and research analytics.
+- **Frontend** — React 18 + Vite + TypeScript, Apollo Client, CSS Modules, react-i18next (EN/LV).
 
-Lab results, parent scripts, and model answers are entirely hardcoded in the source — the AI does not generate clinical content, only delivers and evaluates against it.
+The Anthropic API key lives **exclusively on the server** (`backend/app/llm/`). The browser never sees or sends any AI credentials.
 
----
+Additional surfaces:
 
-## Getting Started
+- **Educator dashboard** — cohorts, assignments, read-only transcript replay of assigned work, cohort analytics, and in-app case authoring with a draft/publish workflow.
+- **Research MCP server** (`/mcp`, disabled by default) — a token-authenticated, read-only, pseudonymized and k-anonymized interface over the event log for research tooling. No free text and no direct identifiers are exposed.
 
-### Prerequisites
+## Security & Data Protection
 
-- Node.js 18 or higher (`node --version` to check)
-- An Anthropic API key — get one at [console.anthropic.com](https://console.anthropic.com)
+- Passwordless magic-link authentication (6-digit student number, locked `@rsu.edu.lv` domain); opaque server-side sessions in an httpOnly cookie.
+- Role-based access (student / staff / admin) enforced server-side on every query, mutation, nested field, and the SSE stream. Staff can read only attempts linked to assignments in cohorts they teach.
+- PII (names, emails, login numbers) encrypted at rest with pgcrypto; lookups via peppered HMAC hashes.
+- Rate limiting on registration, login-link requests, and link consumption.
+- Research access is pseudonymized (HMAC with a dedicated pepper), k-anonymized, and withholds all free text.
+- The application refuses to start in production if any required secret is missing.
 
-### Setup with the script
+Students are identifiable research subjects in the EU; hosting and data handling are subject to GDPR and the university's ethics-board approval.
 
-Clone the repository and run the setup script:
+## Development
 
-```bash
-git clone https://github.com/rozevskamaria/CaseRoom.git
-cd CaseRoom
-chmod +x setup.sh
-./setup.sh
-```
-
-The script creates a Vite/React project, copies the source file in, and sets up the environment file.
-
-Then add your API key to `.env`:
-
-```
-VITE_ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-Start the development server:
+Prerequisites: Docker + Docker Compose.
 
 ```bash
-npm run dev
+cp .env.example .env      # add a real ANTHROPIC_API_KEY
+docker compose up --build
 ```
 
-Open [http://localhost:5173](http://localhost:5173) in your browser.
+- Frontend: http://localhost:5173
+- GraphQL + GraphiQL: http://localhost:8000/graphql
+- Health: http://localhost:8000/health
 
-### Manual setup
-
-If you prefer to set up manually:
+Backend tests and lint:
 
 ```bash
-npm create vite@latest iei-simulator -- --template react
-cd iei-simulator
+cd backend
+uv run --python 3.12 pytest          # unit suite
+uv run --python 3.12 pytest -m dbintegration   # requires Postgres on :5433
+uv run ruff check .
+```
+
+Frontend:
+
+```bash
+cd frontend
 npm install
-cp ../IEI_Chatbot_v2.jsx src/App.jsx
+npm run lint && npm run typecheck && npm run test && npm run build
 ```
 
-Create `.env`:
-```
-VITE_ANTHROPIC_API_KEY=sk-ant-your-key-here
-```
-
-Run:
-```bash
-npm run dev
-```
-
----
-
-## Standalone HTML File
-
-A pre-compiled standalone HTML file (`IEI_Chatbot.html`) is included. It runs without a build step and without Node.js.
-
-**Important:** the file must be served over HTTP, not opened directly from the filesystem. Safari and some other browsers block API calls from `file://` URLs.
-
-To serve it locally:
-
-```bash
-cd /path/to/file
-python3 -m http.server 8080
-```
-
-Then open [http://localhost:8080/IEI_Chatbot.html](http://localhost:8080/IEI_Chatbot.html).
-
-To add your API key to the standalone file, open it in a text editor and find the `callClaude` function. Add the following to the headers object:
-
-```javascript
-"x-api-key": "sk-ant-your-key-here",
-"anthropic-version": "2023-06-01",
-"anthropic-dangerous-direct-browser-calls": "true"
-```
-
----
-
-## Rebuild the HTML after editing the JSX
-
-After making changes to `IEI_Chatbot_v2.jsx`, rebuild the standalone file:
-
-```bash
-node -e "
-const { transform } = require('/path/to/sucrase');
-const fs = require('fs');
-let src = fs.readFileSync('IEI_Chatbot_v2.jsx', 'utf8');
-src = src.replace(/^import.*\n/, '').replace('export default function App()', 'function App()');
-src = 'const { useState, useRef, useEffect } = React;\n' + src;
-src += '\nReactDOM.createRoot(document.getElementById(\"root\")).render(React.createElement(App));\n';
-const result = transform(src, { transforms: ['jsx'], jsxPragma: 'React.createElement', production: true });
-const html = \`<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width, initial-scale=1.0'><title>CaseRoom — RSU</title><script src='https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js'></script><script src='https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js'></script><style>*{box-sizing:border-box;margin:0;padding:0}body{background:#F8F6F0;font-family:'Segoe UI',Arial,sans-serif}#root{height:100vh}</style></head><body><div id='root'></div><script>\${result.code}</script></body></html>\`;
-fs.writeFileSync('IEI_Chatbot.html', html);
-console.log('Done');
-"
-```
-
----
+See `DEVELOPMENT.md` for the full guide and `CLAUDE.md` for contribution conventions.
 
 ## Deployment
 
-Build for production:
-
-```bash
-npm run build
-```
-
-The output goes into the `dist/` folder. Upload it to any static web host (Netlify, Vercel, Azure Static Web Apps, university web server).
-
-**Note:** when deploying, set `VITE_ANTHROPIC_API_KEY` as an environment variable in your hosting platform rather than committing it to the repository. The `.env` file is listed in `.gitignore` and should never be committed.
-
----
+Production runs as containers behind Caddy (automatic TLS): frontend (nginx), backend (uvicorn), ARQ worker, PostgreSQL, and Redis. See `deploy/docker-compose.prod.yml`, `deploy/Caddyfile`, and `deploy/.env.prod.example` — every value in the env example must be set; the backend fails fast on missing production secrets. Apply database migrations with `alembic upgrade head` before starting a new version.
 
 ## Project Structure
 
 ```
 CaseRoom/
-├── IEI_Chatbot_v2.jsx     # Full source — all cases, logic, and UI
-├── IEI_Chatbot.html        # Pre-compiled standalone HTML
-├── setup.sh                # Setup script for Claude Code / Terminal
-└── README.md
+├── backend/            # FastAPI + GraphQL + SSE + workers
+├── frontend/           # React + Vite + TypeScript
+├── deploy/             # production compose, Caddyfile, env template
+├── docs/               # architecture documentation (Antora)
+├── .changeset/         # pending changelog entries (changesets)
+├── IEI_Chatbot_v2.jsx  # original prototype — canonical source for ported logic
+├── IEI_Chatbot_6.html  # compiled reference artifact of the prototype
+└── docker-compose.yml  # development stack
 ```
 
----
+## Documentation
+
+Architectural design docs (component map, data-flow diagrams, security model, deployment,
+research platform) live in `docs/` as an Antora site:
+
+```bash
+npm install
+npm run docs:build      # renders to build/site
+```
+
+In production the built site is served at `https://caseroom.tech/docs/`, refreshed on every
+deploy. When browsing this repository on GitHub, the AsciiDoc pages under
+`docs/modules/ROOT/pages/` render directly, and the data-flow diagrams render in
+[docs/data-flow.md](docs/data-flow.md).
+
+Changelog entries are managed with [changesets](https://github.com/changesets/changesets):
+every PR carries a `.changeset/*.md` file (CI enforces this), and the release workflow
+aggregates them into `CHANGELOG.md` via a version PR.
+
+`IEI_Chatbot_v2.jsx` is the historical single-file prototype this platform was ported from. It is kept as the reference for behavioural parity; it is not deployed and should not be run against a real API key from a browser.
 
 ## Clinical Context
 
@@ -180,20 +132,9 @@ This project was developed as part of a clinical genetics residency and PhD rese
 
 All clinical content — lab values, parent scripts, model diagnoses, management plans, and genetic counselling points — was authored and reviewed by a clinical genetics specialist. The AI does not determine what is clinically correct; it delivers and evaluates against content written by the clinician-educator.
 
----
-
-## Known Limitations
-
-- Requires an Anthropic API key — the simulator makes direct browser-to-API calls
-- Safari requires the file to be served over HTTP (localhost or hosted URL), not opened as a local file
-- The AI parent voice may occasionally draw on general medical knowledge beyond the explicit case script
-- No persistent student progress tracking across devices — progress is stored in the browser session only
-
----
-
 ## Author
 
-**Marija Rozevska, MD**
+**Marija Rozevska, MD** — clinical content and study design
 
 ---
 

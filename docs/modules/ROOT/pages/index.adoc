@@ -1,0 +1,53 @@
+= CaseRoom Architecture Documentation
+
+CaseRoom is an AI-powered clinical case simulator teaching **Inborn Errors of Immunity (IEI)**
+to 5th-year medical students at Rīga Stradiņš University. Students take history from an AI
+parent, order investigations, submit differential diagnoses, and receive structured formative
+feedback. Educators manage cohorts and assignments, review assigned transcripts, author new
+cases, and read cohort analytics. A pseudonymized research surface exposes the interaction
+data for the underlying PhD research project.
+
+This site documents the system's architecture for technical review.
+
+== Reading guide
+
+[cols="1,3"]
+|===
+|Page |What it covers
+
+|xref:architecture.adoc[Architecture]
+|Layered design, component responsibilities, event sourcing, the frozen API contract, and the porting-fidelity principle behind the codebase.
+
+|xref:data-flow.adoc[Data Flow]
+|The full component data-flow graph and sequence diagrams for consultation turns, authentication, and feedback generation.
+
+|xref:security.adoc[Security & Data Protection]
+|Authentication, authorization model, PII encryption, rate limiting, error handling, and GDPR posture.
+
+|xref:deployment.adoc[Deployment & Operations]
+|Production topology, configuration, migrations, CI, and the changeset-based release flow.
+
+|xref:research.adoc[Research Platform]
+|The append-only event log as a research dataset, the MCP research server, k-anonymization, analytics, and exports.
+|===
+
+== System at a glance
+
+* **Frontend** — React 18 + Vite + TypeScript single-page app; Apollo Client; CSS Modules;
+  English and Latvian UI. A pixel-faithful port of the clinician-validated prototype.
+* **Backend** — FastAPI (async Python 3.12); GraphQL via Strawberry at `/graphql`; a plain
+  HTTP Server-Sent Events endpoint for streaming AI replies; async SQLAlchemy 2.0 + Alembic
+  on PostgreSQL; Redis for sessions, rate limits, and the ARQ job queue.
+* **AI** — Anthropic Claude, reached exclusively from the server. The model delivers and
+  evaluates against clinician-authored content; it never determines what is clinically correct.
+* **Data** — every student attempt is an append-only event log, replayable field-by-field
+  for review, analytics, and research.
+
+== Provenance
+
+The application is a 1:1 behavioural port of a single-file React prototype
+(`IEI_Chatbot_v2.jsx`) authored with and validated by the project clinician. All clinical
+content — lab values, parent scripts, model diagnoses, management plans, genetic counselling —
+was written and reviewed by **Marija Rozevska, MD** and moved verbatim into versioned case
+data. Behavioural parity is enforced by JS-oracle fixture tests and a byte-frozen GraphQL
+schema snapshot.

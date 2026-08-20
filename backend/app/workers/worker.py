@@ -5,13 +5,14 @@ from typing import Any
 from arq.connections import RedisSettings
 
 from app.auth.email import get_email_service
-from app.core.config import get_settings
+from app.core.config import get_settings, validate_production_settings
 from app.core.db import get_sessionmaker
 from app.workers.jobs import generate_research_export, send_magic_link
 
 
 async def _startup(ctx: dict[str, Any]) -> None:
     settings = get_settings()
+    validate_production_settings(settings)
     ctx["settings"] = settings
     ctx["sessionmaker"] = get_sessionmaker()
     ctx["email_service"] = get_email_service()

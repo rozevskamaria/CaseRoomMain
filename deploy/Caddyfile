@@ -2,10 +2,27 @@
 	email admin@caseroom.tech
 }
 
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		-Server
+	}
+}
+
 caseroom.tech {
+	import security_headers
 	@api path /graphql* /sse/*
 	handle @api {
 		reverse_proxy backend:8000
+	}
+	redir /docs /docs/ 308
+	handle_path /docs/* {
+		root * /srv/docs
+		file_server
 	}
 	handle {
 		reverse_proxy frontend:80
@@ -13,6 +30,7 @@ caseroom.tech {
 }
 
 api.caseroom.tech {
+	import security_headers
 	reverse_proxy backend:8000
 }
 

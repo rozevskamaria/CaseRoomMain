@@ -666,3 +666,62 @@ async def test_button_transition_go_to_tests_clears_interp():
     assert session.phase == "tests"
     assert session.interp_text == ""
     assert session.interp_result == ""
+
+
+async def test_attempt_meta_tracks_started_and_completion():
+    service, llm = make_service()
+    session = await service.start_case("xla", "practice")
+
+    meta = await service.get_attempt_meta(session.id)
+    assert meta is not None
+    assert meta.started_at is not None
+    assert meta.status == "in_progress"
+    assert meta.completed_at is None
+
+    await service.set_final_answer_field(session.id, "diagnosis", "XLA")
+    await service.submit_final_answer(session.id)
+
+    meta = await service.get_attempt_meta(session.id)
+    assert meta.status == "completed"
+    assert meta.completed_at is not None
+
+
+async def test_set_final_answer_fields_appends_events_in_order():
+    service, llm = make_service()
+    session = await service.start_case("xla", "practice")
+
+    values = {
+        "diagnosis": "XLA",
+        "findings": "absent B cells",
+        "management": "IVIG",
+    }
+    session = await service.set_final_answer_fields(session.id, values)
+
+    assert session.final_answer.diagnosis == "XLA"
+    assert session.final_answer.findings == "absent B cells"
+    assert session.final_answer.management == "IVIG"
+
+    events = await service.events(session.id)
+    field_events = [
+        e for e in events if e.type == EventType.FINAL_ANSWER_FIELD_SET.value
+    ]
+    assert [e.data["field_name"] for e in field_events] == list(values.keys())
+
+
+async def test_events_many_returns_per_attempt_logs():
+    service, llm = make_service()
+    first = await service.start_case("xla", "practice")
+    second = await service.start_case("xla", "exam")
+
+    resolved = await service.events_many([first.id, second.id, "unknown"])
+
+    assert set(resolved.keys()) == {first.id, second.id, "unknown"}
+    assert [e.seq for e in resolved[first.id]] == [1, 2]
+    assert [e.seq for e in resolved[second.id]] == [1, 2]
+    assert resolved["unknown"] == []
+
+
+async def test_mutation_on_unknown_session_raises_value_error():
+    service, llm = make_service()
+    with pytest.raises(ValueError, match="Unknown session: nope"):
+        await service.send_test_order("nope", "CBC")

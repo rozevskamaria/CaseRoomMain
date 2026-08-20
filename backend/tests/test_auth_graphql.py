@@ -368,3 +368,19 @@ async def test_full_auth_flow_register_consume_me_and_ownership(fake_llm, anon_c
 
     after = await _post(anon_client, "query { me { id } }")
     assert after["data"]["me"] is None
+
+
+async def test_dev_login_disabled_outside_development(fake_llm, anon_client, monkeypatch):
+    from app.core.config import get_settings
+
+    monkeypatch.setenv("APP_ENV", "staging")
+    get_settings.cache_clear()
+    try:
+        payload = await _post(
+            anon_client,
+            'mutation { devLogin(loginName: "111333") { ok reason } }',
+        )
+        assert payload["data"]["devLogin"]["ok"] is False
+        assert payload["data"]["devLogin"]["reason"] == "disabled"
+    finally:
+        get_settings.cache_clear()

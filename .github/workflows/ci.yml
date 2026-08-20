@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Generate GraphQL types
+        run: npm run codegen
+
       - name: Lint
         run: npm run lint
 
@@ -61,6 +64,43 @@ jobs:
       - name: Build
         run: npm run build
 
+  docs:
+    name: Docs (Antora build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build documentation site
+        run: npm run docs:build
+
+  changeset:
+    name: Changeset present
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Require a changeset for this PR
+        run: npx changeset status --since origin/${{ github.base_ref }}
+
   compose-validate:
     name: Compose config validation
     runs-on: ubuntu-latest
@@ -72,3 +112,109 @@ jobs:
 
       - name: Validate docker-compose.yml
         run: docker compose config -q
+
+  deploy:
+    name: Deploy to production
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    needs: [backend, frontend, docs, compose-validate]
+    runs-on: ubuntu-latest
+    environment: production
+    concurrency: deploy-production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - name: Build documentation site
+        run: |
+          npm ci
+          npm run docs:build
+
+      - name: Check deploy credentials
+        id: creds
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          if [ -z "$DEPLOY_SSH_KEY" ] || [ -z "$DEPLOY_HOST" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::DEPLOY_SSH_KEY / DEPLOY_HOST secrets not set — skipping deployment"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up SSH
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Sync repository to server
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            --exclude ".git" \
+            --exclude "node_modules" \
+            --exclude ".venv" \
+            --exclude "dist" \
+            --exclude "build" \
+            --exclude "coverage" \
+            --exclude ".env" \
+            --exclude "*.local" \
+            --exclude "preview-password.txt" \
+            --exclude "docker-compose.override.yml" \
+            --exclude "CLAUDE.md" \
+            --exclude "deploy/docs-site" \
+            ./ "$DEPLOY_USER@$DEPLOY_HOST:/opt/caseroom/"
+
+      - name: Sync documentation site to server
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+        run: |
+          rsync -az --delete \
+            -e "ssh -i ~/.ssh/deploy_key" \
+            build/site/ "$DEPLOY_USER@$DEPLOY_HOST:/opt/caseroom/deploy/docs-site/"
+
+      - name: Build, migrate, seed, restart
+        if: steps.creds.outputs.configured == 'true'
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER || 'root' }}
+        run: |
+          ssh -i ~/.ssh/deploy_key "$DEPLOY_USER@$DEPLOY_HOST" '
+            set -euo pipefail
+            cd /opt/caseroom/deploy
+            C="docker compose -f docker-compose.prod.yml"
+            $C build
+            $C run --rm -T backend alembic upgrade head </dev/null
+            $C run --rm -T backend python -m app.db.seed </dev/null
+            $C up -d --force-recreate caddy backend worker frontend
+            docker image prune -f
+          '
+
+      - name: Smoke check
+        if: steps.creds.outputs.configured == 'true'
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS --max-time 5 https://api.caseroom.tech/health >/dev/null; then
+              echo "backend healthy"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "health check failed after 150s"
+          exit 1

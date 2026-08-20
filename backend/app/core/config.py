@@ -71,3 +71,37 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+REQUIRED_PRODUCTION_SETTINGS = (
+    "ANTHROPIC_API_KEY",
+    "PGCRYPTO_KEY",
+    "LOGIN_HASH_PEPPER",
+    "RESEND_API_KEY",
+)
+
+
+def validate_production_settings(settings: Settings) -> None:
+    if settings.APP_ENV != "production":
+        return
+    missing = [
+        name
+        for name in REQUIRED_PRODUCTION_SETTINGS
+        if not getattr(settings, name)
+    ]
+    if missing:
+        raise RuntimeError(
+            "Refusing to start in production with unset settings: "
+            + ", ".join(missing)
+        )
+    if "localhost" in settings.PUBLIC_BASE_URL:
+        raise RuntimeError(
+            "PUBLIC_BASE_URL must be the deployed origin in production"
+        )
+    if settings.MCP_ENABLED and not (
+        settings.MCP_RESEARCH_TOKEN and settings.RESEARCH_PSEUDONYM_PEPPER
+    ):
+        raise RuntimeError(
+            "MCP_ENABLED requires MCP_RESEARCH_TOKEN and "
+            "RESEARCH_PSEUDONYM_PEPPER in production"
+        )

@@ -389,3 +389,27 @@ async def test_attempt_query_unknown_is_forbidden_for_non_owner(fake_llm, gql_cl
     payload = resp.json()
     assert payload.get("errors")
     assert "Forbidden" in payload["errors"][0]["message"]
+
+
+async def test_unexpected_resolver_errors_are_masked(fake_llm, gql_client, monkeypatch):
+    started = await _gql(gql_client, START, {"caseId": "xla", "mode": "practice"})
+    assert started["startCase"]["id"]
+
+    async def exploding_get(self, attempt_id):
+        raise RuntimeError("db connection to 10.0.0.5 failed")
+
+    from app.services.session import SessionService
+
+    monkeypatch.setattr(SessionService, "get", exploding_get)
+    resp = await gql_client.post(
+        "/graphql",
+        json={
+            "query": "query S($id: String!) { session(id: $id) { id } }",
+            "variables": {"id": started["startCase"]["id"]},
+        },
+    )
+    payload = resp.json()
+    assert payload.get("errors")
+    message = payload["errors"][0]["message"]
+    assert "10.0.0.5" not in message
+    assert message == "Unexpected error."

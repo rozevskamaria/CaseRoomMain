@@ -189,12 +189,9 @@ class ResearchDataService:
                     suppressed=True,
                     reason=LOW_N,
                 )
-        single_spec = AttemptFilterSpec()
-        rows = [
-            row
-            for row in await self._repo.feedback_rows(single_spec)
-            if row.attempt_id == attempt_id
-        ]
+        rows = await self._repo.feedback_rows(
+            AttemptFilterSpec(), attempt_id=attempt_id
+        )
         if not rows:
             return None
         row = rows[0]
