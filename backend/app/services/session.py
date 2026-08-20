@@ -147,17 +147,43 @@ class SessionService:
             return None
         return fold(events)
 
+    async def _require(self, attempt_id: str) -> AttemptProjection:
+        proj = await self._load(attempt_id)
+        if proj is None:
+            raise ValueError(f"Unknown session: {attempt_id}")
+        return proj
+
     async def _commit(
-        self, attempt_id: str, events: list[NewEvent]
+        self,
+        attempt_id: str,
+        events: list[NewEvent],
+        base: AttemptProjection | None = None,
     ) -> AttemptProjection:
-        await self._store.append_events(attempt_id, events)
-        return fold(await self._store.load_events(attempt_id))
+        persisted = await self._store.append_events(attempt_id, events)
+        if base is not None:
+            proj = fold(persisted, base=base)
+        else:
+            proj = fold(await self._store.load_events(attempt_id))
+        await self._store.sync_projection(attempt_id, proj)
+        return proj
 
     async def get(self, attempt_id: str) -> AttemptProjection | None:
         return await self._load(attempt_id)
 
     async def get_attempt_owner(self, attempt_id: str) -> str | None:
         return await self._store.get_attempt_owner(attempt_id)
+
+    async def get_attempt_meta(self, attempt_id: str):
+        return await self._store.get_attempt_meta(attempt_id)
+
+    async def events(self, attempt_id: str):
+        return await self._store.load_events(attempt_id)
+
+    async def events_many(self, attempt_ids: list[str]):
+        return await self._store.load_events_many(attempt_ids)
+
+    async def get_case(self, case_id: str, language: str = "en") -> Case | None:
+        return await self._cases.get_case(case_id, language)
 
     async def start_case(
         self,
@@ -323,7 +349,7 @@ class SessionService:
     async def send_message(
         self, attempt_id: str, text: str
     ) -> tuple[SendResult, AttemptProjection]:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         prior_messages = list(proj.messages)
 
@@ -357,7 +383,7 @@ class SessionService:
                             },
                         )
                     )
-                    new_proj = await self._commit(attempt_id, events)
+                    new_proj = await self._commit(attempt_id, events, base=proj)
                     return SendResult(branch="scid"), new_proj
 
         router = select_router(
@@ -378,23 +404,23 @@ class SessionService:
                 unavailable_text=lambda key: f"📋 {key}: Results not yet available.",
                 always_batch_note=True,
             )
-            new_proj = await self._commit(attempt_id, events)
+            new_proj = await self._commit(attempt_id, events, base=proj)
             return SendResult(branch="tests"), new_proj
 
         if isinstance(action, ExamAction):
             self._append_exam(events, case, proj)
-            new_proj = await self._commit(attempt_id, events)
+            new_proj = await self._commit(attempt_id, events, base=proj)
             return SendResult(branch="tests"), new_proj
 
         result = self._apply_parent(events, proj, case, prior_messages, text)
-        new_proj = await self._commit(attempt_id, events)
+        new_proj = await self._commit(attempt_id, events, base=proj)
         new_proj.pending_parent = result
         return result, new_proj
 
     async def append_parent_reply(
         self, attempt_id: str, text: str
     ) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events: list[NewEvent] = [
             NewEvent(
                 type=EventType.PARENT_REPLY_APPENDED,
@@ -417,7 +443,7 @@ class SessionService:
                     },
                 )
             )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     def _append_exam(
         self, events: list[NewEvent], case: Case, proj: AttemptProjection
@@ -445,14 +471,14 @@ class SessionService:
             )
 
     async def request_exam(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         events: list[NewEvent] = []
         self._append_exam(events, case, proj)
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def send_test_order(self, attempt_id: str, text: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         detected_keys = detect_tests_in_message(text)
 
@@ -469,7 +495,7 @@ class SessionService:
                     },
                 )
             ]
-            return await self._commit(attempt_id, events)
+            return await self._commit(attempt_id, events, base=proj)
 
         events = []
         self._apply_test_order(
@@ -483,10 +509,10 @@ class SessionService:
             ),
             always_batch_note=False,
         )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def submit_summary(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         events: list[NewEvent] = [
             NewEvent(
@@ -517,10 +543,10 @@ class SessionService:
                 data={"from_phase": proj.phase, "to_phase": "examination"},
             )
         )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def submit_differentials(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         events: list[NewEvent] = [
             NewEvent(
@@ -563,10 +589,10 @@ class SessionService:
                 data={"from_phase": proj.phase, "to_phase": "tests"},
             )
         )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def submit_interpretation(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         interp_note_message_id = self._next_id()
         interp_note_text = f"📊 My interpretation:\n{proj.interp_text}"
@@ -591,10 +617,10 @@ class SessionService:
                 "error": True,
             }
         events = [NewEvent(type=EventType.INTERPRETATION_EVALUATED, data=data)]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def submit_final_answer(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         answer = proj.final_answer
         ans_text = (
@@ -641,10 +667,10 @@ class SessionService:
                     data={"message_id": self._next_id(), "text": FEEDBACK_ERROR},
                 )
             )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def request_hint(self, attempt_id: str) -> str:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         hints_used = proj.hints_used + 1
         msgs = [{"text": m.text, "type": m.type} for m in proj.messages]
@@ -665,11 +691,12 @@ class SessionService:
         await self._commit(
             attempt_id,
             [NewEvent(type=EventType.HINT_REQUESTED, data={"hint_text": hint_text})],
+            base=proj,
         )
         return hint_text
 
     async def submit_reflection(self, attempt_id: str, text: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         case = await self._case(proj)
         events: list[NewEvent] = [
             NewEvent(
@@ -688,7 +715,7 @@ class SessionService:
                     data={"to_step": proj.reflection_step + 1},
                 )
             )
-            return await self._commit(attempt_id, events)
+            return await self._commit(attempt_id, events, base=proj)
 
         system = build_reflection_summary_prompt(case, proj.language)
         answers = [{"q": r["q"], "a": r["a"]} for r in proj.reflection_answers]
@@ -703,10 +730,10 @@ class SessionService:
                 data={"message_id": self._next_id(), "text": summary},
             )
         )
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_summary(self, attempt_id: str, prompt: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(
                 type=EventType.PHASE_CHANGED,
@@ -721,12 +748,12 @@ class SessionService:
                 },
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_differential(
         self, attempt_id: str, prompt: str
     ) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(
                 type=EventType.PHASE_CHANGED,
@@ -741,12 +768,12 @@ class SessionService:
                 },
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_interpretation(
         self, attempt_id: str, prompt: str
     ) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(
                 type=EventType.PHASE_CHANGED,
@@ -761,10 +788,10 @@ class SessionService:
                 },
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_final(self, attempt_id: str, prompt: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(
                 type=EventType.PHASE_CHANGED,
@@ -779,10 +806,10 @@ class SessionService:
                 },
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_tests(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(type=EventType.INTERPRETATION_RESET, data={}),
             NewEvent(
@@ -790,10 +817,10 @@ class SessionService:
                 data={"from_phase": proj.phase, "to_phase": "tests"},
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def go_to_reflection(self, attempt_id: str) -> AttemptProjection:
-        proj = await self._load(attempt_id)
+        proj = await self._require(attempt_id)
         events = [
             NewEvent(
                 type=EventType.MODE_CHANGED,
@@ -804,7 +831,7 @@ class SessionService:
                 data={"from_phase": proj.phase, "to_phase": "reflection"},
             ),
         ]
-        return await self._commit(attempt_id, events)
+        return await self._commit(attempt_id, events, base=proj)
 
     async def set_summary(self, attempt_id: str, value: str) -> AttemptProjection:
         return await self._commit(
@@ -823,6 +850,18 @@ class SessionService:
             attempt_id,
             [NewEvent(type=EventType.INTERP_TEXT_SET, data={"value": value})],
         )
+
+    async def set_final_answer_fields(
+        self, attempt_id: str, values: dict[str, str]
+    ) -> AttemptProjection:
+        events = [
+            NewEvent(
+                type=EventType.FINAL_ANSWER_FIELD_SET,
+                data={"field_name": field_name, "value": value},
+            )
+            for field_name, value in values.items()
+        ]
+        return await self._commit(attempt_id, events)
 
     async def set_final_answer_field(
         self, attempt_id: str, field_name: str, value: str

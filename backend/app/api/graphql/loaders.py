@@ -8,8 +8,8 @@ from app.api.runtime import get_cohort_service, get_session_service
 
 
 async def _load_events(keys: list[str]) -> list[list[Any]]:
-    store = get_session_service()._store
-    return [await store.load_events(key) for key in keys]
+    resolved = await get_session_service().events_many(list(keys))
+    return [resolved.get(key, []) for key in keys]
 
 
 def make_events_loader() -> DataLoader[str, list[Any]]:

@@ -4,7 +4,6 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime
 
-from app.content.cases import get_case as content_get_case
 from app.models.assignment import Assignment
 from app.models.cohort import Cohort, CohortAuditLog
 from app.models.user import User
@@ -237,7 +236,8 @@ class CohortService:
         due_at: datetime | None,
         created_by: str,
     ) -> Assignment:
-        if content_get_case(case_id) is None:
+        case = await self._cases.get_case_by_slug(case_id)
+        if case is None:
             raise CohortAccessError("unknown_case")
         version = await self._cases.get_case_version(case_id)
         if version is None:

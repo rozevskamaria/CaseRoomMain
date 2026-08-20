@@ -1,0 +1,110 @@
+= Architecture
+
+== Design principles
+
+Porting fidelity:: The deployed system re-implements a clinician-validated prototype 1:1.
+Test-detection heuristics, lab-text parsing, phase transitions, wrong-path redirects, prompt
+construction, and the feedback shape are replicated exactly and covered by fixture tests
+generated from the original JavaScript (the "JS oracle"). Oddities are preserved deliberately;
+"fixing" behaviour requires an explicit decision, because the prototype is what was validated
+clinically.
+
+Layered, transport-agnostic backend:: Resolvers and SSE handlers are thin: they authenticate,
+authorize, and call a service. Services hold all domain logic and never import the web
+framework. Repositories are the only database-aware code. This lets research scripts reuse
+services and repositories directly, without HTTP.
+
+Event sourcing:: An attempt is not a mutable row — it is an append-only sequence of events
+(`StudentMessageSent`, `TestOrdered`, `LabResultShown`, `PhaseChanged`,
+`FeedbackGenerated`, …, 33 types). Current state is a pure left-fold over the log. This gives
+byte-faithful transcript replay for educators, a complete behavioural dataset for research,
+and an audit trail for free. A small projection cache on the `attempts` row
+(phase/status/completed timestamps) is synchronized on every commit for cheap listing queries.
+
+Frozen API contract:: The GraphQL SDL is snapshot-tested byte-for-byte
+(`backend/tests/test_schema_frozen.py`). Every phase of development was additive; the
+contract the frontend was built against has never broken.
+
+No AI authorship of clinical content:: Clinical fields are seeded verbatim from
+clinician-authored sources or entered by educators in the authoring UI. An import guard test
+asserts that no AI/LLM module can reach the authoring write path.
+
+== Component map
+
+[cols="1,2,3"]
+|===
+|Layer |Location |Responsibility
+
+|Transport
+|`backend/app/api/`
+|GraphQL schema and resolvers, SSE route, request context (cookie → session → user, request-scoped services, DataLoaders), error masking.
+
+|Authorization
+|`backend/app/api/graphql/permissions.py`, `auth_guards.py`
+|Role permissions plus ownership-first guards re-checked on nested fields and the SSE stream.
+
+|Services
+|`backend/app/services/`
+|`SessionService` (event append + fold), action routing (English heuristic / Claude tool-use), `CaseEngine` (ported heuristics), prompt builders, `CohortService`, `CaseAuthoringService`, `AnalyticsService`, `ResearchDataService`.
+
+|Auth
+|`backend/app/auth/`
+|Magic-link `AuthService`, session/link/rate-limit stores (in-memory dev, Redis prod), email delivery, admin bootstrap.
+
+|Stores
+|`backend/app/services/stores.py`
+|The `AttemptStore`/`CaseSource` seam: in-memory implementations for development and tests, database-backed implementations in production.
+
+|Repositories
+|`backend/app/repositories/`
+|All SQL. Attempt/event access, pgcrypto user access, cohort/assignment queries, authoring, analytics aggregation, research queries.
+
+|Models
+|`backend/app/models/`
+|SQLAlchemy ORM: users, cases (versioned, localized, typed tests), attempts, events, cohorts, assignments, audit log.
+
+|Workers
+|`backend/app/workers/`
+|ARQ jobs: magic-link email delivery, pseudonymized research export. Only the worker imports `arq`.
+
+|MCP
+|`backend/app/mcp/`
+|Optional read-only research MCP server mounted at `/mcp` behind bearer-token middleware.
+
+|Frontend
+|`frontend/src/`
+|Screens (consultation, investigations, diagnosis, feedback, auth, educator dashboard, authoring), ~20 reusable components, typed GraphQL operations, SSE hook, client-side event replay for transcript review.
+|===
+
+== Case content lifecycle
+
+Cases exist in two forms with one runtime representation:
+
+1. **Seed cases** — six clinician-authored cases shipped as Python data files, seeded into
+   the database verbatim as published version 1.
+2. **Authored cases** — created in the educator dashboard as drafts (per-language EN/LV
+   editors, free-text lab data, verbatim "copy from EN"), validated by a hard
+   localization-completeness gate, then **published**. Published versions are immutable;
+   attempts and assignments pin a `case_version_id`, so revising a case never invalidates
+   prior research data. The runtime always serves the highest published version.
+
+== Language and action routing
+
+The original prototype is English-only, and its behaviour is preserved exactly: English
+attempts route student messages with the ported heuristic (`is_test_order`,
+`detect_tests_in_message`). Latvian attempts (and hybrid mode) route through a Claude
+tool-use call whose `order_test` enum is restricted to the case's canonical test keys — so
+whichever path routes a message, the resulting events are byte-identical. Latvian clinical
+content falls back to verbatim English when a localization is missing; it is never
+machine-translated.
+
+== Testing strategy
+
+* **JS-oracle parity fixtures** — the ported heuristics are tested against input/output
+  pairs captured from the original JSX.
+* **Frozen SDL snapshot** — the GraphQL contract cannot drift silently.
+* **Event-replay integration tests** — a full play-through against PostgreSQL asserts the
+  projection replays field-identically from the stored log.
+* **Adversarial guard tests** — cross-tenant access, enrollment-scoping, and
+  staff-read-boundary attempts are asserted to fail.
+* Suites: 430 backend unit tests, 90 database integration tests, 366 frontend tests.

@@ -1,0 +1,55 @@
+= Research Platform
+
+CaseRoom is both a teaching tool and the data-collection instrument for a clinical-genetics
+PhD project. The research surface is designed so that analysis never touches raw personal
+data.
+
+== The event log as dataset
+
+Every attempt is an append-only sequence of typed events with per-attempt sequence numbers
+and timestamps. Because the UI itself is driven by folding this log, the research dataset is
+*exactly* what students experienced — which questions they asked, which tests they ordered
+and in what order, which wrong paths they took, how many hints they needed, and how their
+final answers were scored.
+
+== Access paths
+
+[cols="1,3"]
+|===
+|Path |Properties
+
+|Educator dashboard
+|Staff replay transcripts of *assigned* work only (assignment-scoped guard), using the same rendering components students see. Cohort analytics are aggregate-only.
+
+|`cohortAnalytics` GraphQL
+|Per-cohort aggregates: attempts per case, completion rate, score distributions, diagnostic-accuracy distribution, wrong-path frequency. Cohort-scoped by the staff guard; no cross-cohort leakage.
+
+|MCP research server (`/mcp`)
+|Five read-only tools for research agents: `list_attempts`, `get_attempt_timeline`, `get_feedback`, `list_cohorts`, `aggregate_stats`. Disabled unless `MCP_ENABLED` is set; bearer-token authenticated on every sub-request.
+
+|Research export job
+|An ARQ job producing pseudonymized JSON + CSV exports of attempt summaries and aggregates for offline analysis.
+|===
+
+== Privacy engineering
+
+* **Pseudonymization** — student identifiers are replaced by an HMAC with a dedicated
+  research pepper. Startup validation asserts this pepper differs from both the PII
+  encryption key and the login-hash pepper, so pseudonyms cannot be linked back through
+  key reuse.
+* **k-anonymity** — any count or rate derived from fewer than `K_ANON_THRESHOLD` students
+  (default 5) is suppressed as `low_n`; cohort sizes are reported in bands.
+* **Free-text withholding** — the timeline tool applies a per-event-type field allow-list:
+  categorical facts (event type, phase transitions, ordered test keys, wrong-path keys,
+  error flags) pass; all message text, summaries, differentials, and reflections are
+  withheld.
+* **Timestamp coarsening** — attempt start/completion are reported as dates; event timing is
+  exposed only as offsets from attempt start.
+* **Import guard** — a test walks the research repository's import graph and asserts it can
+  never transitively import the PII-decryption helpers.
+
+== Case versioning and data validity
+
+Attempts pin the exact `case_version_id` they were played against. Editing a case creates a
+new draft version; publishing it never mutates the version prior attempts reference. Research
+comparisons across case revisions therefore remain valid indefinitely.

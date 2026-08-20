@@ -240,3 +240,20 @@ async def test_create_staff_sends_link_and_creates_invited_staff():
     assert staff.status == UserStatus.invited
     await bg.drain()
     assert email.sent[-1][0] == "tutor1@rsu.edu.lv"
+
+
+async def test_consume_link_rate_limited_per_ip():
+    service, _users, _sessions, _links, _lim, _email, _bg = _make_service()
+    settings = _settings()
+    limit = settings.RATE_LIMIT_CONSUME_PER_IP
+
+    for _ in range(limit):
+        result = await service.consume_link("not-a-real-token", "9.9.9.9")
+        assert result.reason == "expired"
+
+    blocked = await service.consume_link("not-a-real-token", "9.9.9.9")
+    assert blocked.ok is False
+    assert blocked.reason == "rate_limited"
+
+    other_ip = await service.consume_link("not-a-real-token", "8.8.8.8")
+    assert other_ip.reason == "expired"

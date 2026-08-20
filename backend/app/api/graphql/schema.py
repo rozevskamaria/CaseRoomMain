@@ -6,6 +6,9 @@ from datetime import datetime
 from typing import Any
 
 import strawberry
+from graphql import GraphQLError
+from strawberry.exceptions import StrawberryGraphQLError
+from strawberry.extensions import MaskErrors
 from strawberry.fastapi import GraphQLRouter
 from strawberry.scalars import JSON
 from strawberry.types import Info
@@ -32,7 +35,6 @@ from app.api.runtime import (
     get_session_service,
 )
 from app.auth import runtime as auth_runtime
-from app.content.cases import get_case as content_get_case
 from app.core.config import get_settings
 from app.models.case import Case as CaseModel
 from app.models.user import UserRole
@@ -48,13 +50,6 @@ from app.schemas.case import Case as ServiceCase
 from app.services import AttemptProjection as ServiceSession
 from app.services import FinalAnswer as ServiceFinalAnswer
 from app.services import Message as ServiceMessage
-
-
-async def _require_session(session_id: str) -> ServiceSession:
-    session = await get_session_service().get(session_id)
-    if session is None:
-        raise ValueError(f"Unknown session: {session_id}")
-    return session
 
 
 @strawberry.enum
@@ -248,7 +243,7 @@ class CohortStudentType:
         records = await info.context.attempts_by_student_loader.load(
             (self.cohort_id, str(self._user.id))
         )
-        return [_attempt_type_from_model(a) for a in records]
+        return [_attempt_type_from_model(a, slug) for a, slug in records]
 
 
 @strawberry.type
@@ -386,10 +381,10 @@ def _assignment_type(assignment) -> AssignmentType:
     )
 
 
-def _attempt_type_from_model(attempt) -> AttemptType:
+def _attempt_type_from_model(attempt, case_slug: str) -> AttemptType:
     return AttemptType(
         id=str(attempt.id),
-        case_id="",
+        case_id=case_slug,
         mode=attempt.mode,
         phase=attempt.phase,
         status=attempt.status.value,
@@ -464,11 +459,9 @@ def _background(info: Info):
 
 async def _me_from_user(info: Info, user) -> MeType:
     store = auth_runtime.get_user_store(getattr(info.context, "db_session", None))
-    decrypt_login = getattr(store, "decrypt_login_name", None)
-    if decrypt_login is not None:
-        login_name = await store.decrypt_login_name(user)
-        email = await store.decrypt_email(user)
-        full_name = await store.decrypt_full_name(user)
+    decrypt_profile = getattr(store, "decrypt_profile", None)
+    if decrypt_profile is not None:
+        login_name, email, full_name = await decrypt_profile(user)
     else:
         login_name = user.login_name
         email = user.email
@@ -689,8 +682,8 @@ class Query:
         return await _me_from_user(info, user)
 
     @strawberry.field(permission_classes=[IsAuthenticated])
-    def case(self, id: str) -> CaseType | None:
-        case = content_get_case(id)
+    async def case(self, id: str) -> CaseType | None:
+        case = await get_session_service().get_case(id)
         if case is None:
             return None
         return CaseType(
@@ -716,17 +709,29 @@ class Query:
     @strawberry.field(permission_classes=[IsAuthenticated])
     async def attempt(self, info: Info, id: str) -> AttemptType | None:
         await require_attempt_access(info, id, write=False)
-        session = await get_session_service().get(id)
+        service = get_session_service()
+        session = await service.get(id)
         if session is None:
             return None
+        meta = await service.get_attempt_meta(id)
+        if meta is not None:
+            status = meta.status
+            started_at = meta.started_at
+            completed_at = meta.completed_at
+        else:
+            status = (
+                "completed" if session.phase == "feedback" else "in_progress"
+            )
+            started_at = datetime.now()
+            completed_at = None
         return AttemptType(
             id=session.id,
             case_id=session.case_id,
             mode=session.mode,
             phase=session.phase,
-            status="completed" if session.phase == "feedback" else "in_progress",
-            started_at=datetime.now(),
-            completed_at=None,
+            status=status,
+            started_at=started_at,
+            completed_at=completed_at,
         )
 
     @strawberry.field(permission_classes=[IsStaffOrAdmin])
@@ -781,7 +786,7 @@ class Query:
         records = await info.context.attempts_by_student_loader.load(
             (cohort_id, student_id)
         )
-        return [_attempt_type_from_model(a) for a in records]
+        return [_attempt_type_from_model(a, slug) for a, slug in records]
 
     @strawberry.field(permission_classes=[IsStaffOrAdmin])
     async def assignments_for_cohort(
@@ -886,7 +891,6 @@ class Mutation:
     ) -> SendMessageResult:
         await require_attempt_access(info, session_id, write=True)
         service = get_session_service()
-        await _require_session(session_id)
         result, session = await service.send_message(session_id, text)
         return SendMessageResult(
             session=_session_type(session),
@@ -896,7 +900,6 @@ class Mutation:
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def request_exam(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().request_exam(session_id)
         return _session_type(session)
 
@@ -905,7 +908,6 @@ class Mutation:
         self, info: Info, session_id: str, text: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().send_test_order(session_id, text)
         return _session_type(session)
 
@@ -914,14 +916,12 @@ class Mutation:
         self, info: Info, session_id: str, value: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().set_summary(session_id, value)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def submit_summary(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().submit_summary(session_id)
         return _session_type(session)
 
@@ -930,14 +930,12 @@ class Mutation:
         self, info: Info, session_id: str, value: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().set_differentials(session_id, value)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def submit_differentials(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().submit_differentials(session_id)
         return _session_type(session)
 
@@ -946,14 +944,12 @@ class Mutation:
         self, info: Info, session_id: str, value: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().set_interp_text(session_id, value)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def submit_interpretation(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().submit_interpretation(session_id)
         return _session_type(session)
 
@@ -962,7 +958,6 @@ class Mutation:
         self, info: Info, session_id: str, field_name: str, value: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().set_final_answer_field(
             session_id, field_name, value
         )
@@ -973,28 +968,29 @@ class Mutation:
         self, info: Info, session_id: str, answer: FinalAnswerInput | None = None
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         service = get_session_service()
         if answer is not None:
-            for field_name in (
-                "diagnosis",
-                "findings",
-                "differentials",
-                "tests",
-                "management",
-                "genetics",
-                "explanation",
-            ):
-                await service.set_final_answer_field(
-                    session_id, field_name, getattr(answer, field_name)
-                )
+            await service.set_final_answer_fields(
+                session_id,
+                {
+                    field_name: getattr(answer, field_name)
+                    for field_name in (
+                        "diagnosis",
+                        "findings",
+                        "differentials",
+                        "tests",
+                        "management",
+                        "genetics",
+                        "explanation",
+                    )
+                },
+            )
         session = await service.submit_final_answer(session_id)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def request_hint(self, info: Info, session_id: str) -> str:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         return await get_session_service().request_hint(session_id)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
@@ -1002,7 +998,6 @@ class Mutation:
         self, info: Info, session_id: str, text: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().submit_reflection(session_id, text)
         return _session_type(session)
 
@@ -1011,7 +1006,6 @@ class Mutation:
         self, info: Info, session_id: str, prompt: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_summary(session_id, prompt)
         return _session_type(session)
 
@@ -1020,7 +1014,6 @@ class Mutation:
         self, info: Info, session_id: str, prompt: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_differential(session_id, prompt)
         return _session_type(session)
 
@@ -1029,7 +1022,6 @@ class Mutation:
         self, info: Info, session_id: str, prompt: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_interpretation(session_id, prompt)
         return _session_type(session)
 
@@ -1038,21 +1030,18 @@ class Mutation:
         self, info: Info, session_id: str, prompt: str
     ) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_final(session_id, prompt)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def order_investigations(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_tests(session_id)
         return _session_type(session)
 
     @strawberry.mutation(permission_classes=[IsAuthenticated])
     async def reflect(self, info: Info, session_id: str) -> SessionType:
         await require_attempt_access(info, session_id, write=True)
-        await _require_session(session_id)
         session = await get_session_service().go_to_reflection(session_id)
         return _session_type(session)
 
@@ -1083,7 +1072,7 @@ class Mutation:
         svc = auth_runtime.build_auth_service(
             getattr(info.context, "db_session", None)
         )
-        result = await svc.consume_link(token)
+        result = await svc.consume_link(token, _client_ip(info))
         if not result.ok:
             return ConsumeResultType(ok=False, reason=result.reason)
         settings = get_settings()
@@ -1127,7 +1116,7 @@ class Mutation:
 
     @strawberry.mutation
     async def dev_login(self, info: Info, login_name: str) -> ConsumeResultType:
-        if get_settings().APP_ENV == "production":
+        if get_settings().APP_ENV != "development":
             return ConsumeResultType(ok=False, reason="disabled")
         session_id = await auth_runtime.dev_login(
             getattr(info.context, "db_session", None), login_name
@@ -1363,8 +1352,18 @@ class Mutation:
         )
 
 
+def _should_mask_error(error: GraphQLError) -> bool:
+    original = error.original_error
+    if original is None:
+        return False
+    return not isinstance(original, (StrawberryGraphQLError, ValueError, KeyError))
+
+
 schema = strawberry.Schema(
-    query=Query, mutation=Mutation, types=ALL_EVENT_TYPES
+    query=Query,
+    mutation=Mutation,
+    types=ALL_EVENT_TYPES,
+    extensions=[lambda: MaskErrors(should_mask_error=_should_mask_error)],
 )
 
 _graphql_ide = "graphiql" if get_settings().APP_ENV == "development" else None

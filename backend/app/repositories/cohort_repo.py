@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.assignment import Assignment
 from app.models.attempt import Attempt
+from app.models.case import Case as CaseModel, CaseVersion
 from app.models.cohort import (
     Cohort,
     CohortAuditAction,
@@ -377,32 +378,36 @@ class CohortRepository:
 
     async def attempts_for_student_in_cohort(
         self, cohort_id: uuid.UUID, student_id: uuid.UUID
-    ) -> list[Attempt]:
+    ) -> list[tuple[Attempt, str]]:
         stmt = (
-            select(Attempt)
+            select(Attempt, CaseModel.slug)
             .join(Assignment, Assignment.id == Attempt.assignment_id)
+            .join(CaseVersion, CaseVersion.id == Attempt.case_version_id)
+            .join(CaseModel, CaseModel.id == CaseVersion.case_id)
             .where(
                 Assignment.cohort_id == cohort_id,
                 Attempt.student_id == student_id,
             )
             .order_by(Attempt.started_at.desc())
         )
-        result = await self._session.scalars(stmt)
-        return list(result)
+        rows = await self._session.execute(stmt)
+        return [(attempt, slug) for attempt, slug in rows]
 
     async def attempts_for_students(
         self, keys: list[tuple[uuid.UUID, uuid.UUID]]
-    ) -> dict[tuple[uuid.UUID, uuid.UUID], list[Attempt]]:
+    ) -> dict[tuple[uuid.UUID, uuid.UUID], list[tuple[Attempt, str]]]:
         if not keys:
             return {}
-        out: dict[tuple[uuid.UUID, uuid.UUID], list[Attempt]] = {
+        out: dict[tuple[uuid.UUID, uuid.UUID], list[tuple[Attempt, str]]] = {
             key: [] for key in keys
         }
         cohort_ids = {cohort_id for cohort_id, _ in keys}
         student_ids = {student_id for _, student_id in keys}
         stmt = (
-            select(Assignment.cohort_id, Attempt)
+            select(Assignment.cohort_id, Attempt, CaseModel.slug)
             .join(Assignment, Assignment.id == Attempt.assignment_id)
+            .join(CaseVersion, CaseVersion.id == Attempt.case_version_id)
+            .join(CaseModel, CaseModel.id == CaseVersion.case_id)
             .where(
                 Assignment.cohort_id.in_(cohort_ids),
                 Attempt.student_id.in_(student_ids),
@@ -410,10 +415,10 @@ class CohortRepository:
             .order_by(Attempt.started_at.desc())
         )
         rows = await self._session.execute(stmt)
-        for cohort_id, attempt in rows:
+        for cohort_id, attempt, slug in rows:
             key = (cohort_id, attempt.student_id)
             if key in out:
-                out[key].append(attempt)
+                out[key].append((attempt, slug))
         return out
 
     async def decrypt(self, cipher: bytes | None) -> str | None:

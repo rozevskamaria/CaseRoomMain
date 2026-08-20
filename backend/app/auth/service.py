@@ -21,10 +21,15 @@ _DIGITS6 = re.compile(r"^\d{6}$")
 Background = Callable[[Callable[[], Awaitable[None]]], None]
 
 
+_background_tasks: set = set()
+
+
 def _run_now(coro_factory: Callable[[], Awaitable[None]]) -> None:
     import asyncio
 
-    asyncio.ensure_future(coro_factory())
+    task = asyncio.ensure_future(coro_factory())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
 
 
 class _InlineEmailQueue:
@@ -162,7 +167,18 @@ class AuthService:
         self._schedule_register(login_name, full_name)
         return AuthResult()
 
-    async def consume_link(self, token: str) -> ConsumeResult:
+    async def consume_link(
+        self, token: str, ip: str | None = None
+    ) -> ConsumeResult:
+        s = self._settings
+        allowed = await self._limiter.allow(
+            "consume",
+            ip or "unknown",
+            s.RATE_LIMIT_CONSUME_PER_IP,
+            s.RATE_LIMIT_CONSUME_WINDOW_SECONDS,
+        )
+        if not allowed:
+            return ConsumeResult(ok=False, reason="rate_limited")
         record = await self._links.consume(token)
         if record is None:
             return ConsumeResult(ok=False, reason="expired")

@@ -261,3 +261,55 @@ async def test_student_attempts_query_denies_non_member(db_session):
     finally:
         runtime.reset_request_cohort_service(coh_token)
         runtime.reset_request_service(svc_token)
+
+
+async def test_projection_cache_synced_on_commit(db_session):
+    await _seed_case(db_session, "xla")
+    session_service, _ = _services(db_session)
+    proj = await session_service.start_case("xla", "practice")
+
+    await session_service.send_test_order(proj.id, "order a CBC")
+    repo = AttemptRepository(db_session)
+    row = await repo.get_attempt(uuid.UUID(proj.id))
+    assert row.phase == "tests"
+    assert row.status.value == "in_progress"
+    assert row.completed_at is None
+
+    await session_service.submit_final_answer(proj.id)
+    row = await repo.get_attempt(uuid.UUID(proj.id))
+    assert row.status.value == "completed"
+    assert row.completed_at is not None
+
+
+async def test_create_assignment_allows_db_authored_case(db_session):
+    await _seed_case(db_session, "authored-only")
+    users = UserRepository(db_session)
+    staff = await users.create_staff("cccccc", "c@rsu.edu.lv", "C", UserRole.staff)
+    await users.set_status(staff.id, UserStatus.active)
+    student = await users.create_student("400400", "S")
+    await users.set_status(student.id, UserStatus.active)
+
+    session_service, cohort_service = _services(db_session)
+    cohort = await cohort_service.create_cohort(
+        name="C", academic_year=None, created_by=str(staff.id)
+    )
+    await cohort_service.add_member(
+        cohort_id=str(cohort.id), login_name="400400", actor_id=str(staff.id)
+    )
+    assignment = await cohort_service.create_assignment(
+        cohort_id=str(cohort.id),
+        case_id="authored-only",
+        mode="practice",
+        language="en",
+        title=None,
+        opens_at=None,
+        due_at=None,
+        created_by=str(staff.id),
+    )
+
+    proj = await session_service.start_case(
+        "authored-only", "practice", student_id=str(student.id),
+        assignment_id=str(assignment.id),
+    )
+    rows = await cohort_service.student_attempts(str(cohort.id), str(student.id))
+    assert [(str(a.id), slug) for a, slug in rows] == [(proj.id, "authored-only")]

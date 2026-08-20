@@ -1,0 +1,17 @@
+{
+  "name": "caseroom",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI-powered clinical case simulator for teaching Inborn Errors of Immunity at RSU",
+  "scripts": {
+    "changeset": "changeset",
+    "changeset:status": "changeset status",
+    "changeset:version": "changeset version",
+    "docs:build": "antora antora-playbook.yml"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0",
+    "@sntke/antora-mermaid-extension": "^0.0.13",
+    "antora": "^3.1.10"
+  }
+}

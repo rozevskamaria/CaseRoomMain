@@ -283,7 +283,11 @@ class ResearchRepository:
             select(Attempt.started_at).where(Attempt.id == attempt_id)
         )
 
-    async def feedback_rows(self, spec: AttemptFilterSpec) -> list[FeedbackRow]:
+    async def feedback_rows(
+        self,
+        spec: AttemptFilterSpec,
+        attempt_id: uuid.UUID | None = None,
+    ) -> list[FeedbackRow]:
         fb = self._feedback_subq()
         fb_event = Event.__table__.alias("fb_event")
         scores = fb_event.c.data["feedback"]["scores"]
@@ -322,6 +326,8 @@ class ResearchRepository:
             )
         )
         stmt = self._apply_attempt_filters(stmt, spec)
+        if attempt_id is not None:
+            stmt = stmt.where(Attempt.id == attempt_id)
         rows = await self._session.execute(stmt)
         out: list[FeedbackRow] = []
         for row in rows:

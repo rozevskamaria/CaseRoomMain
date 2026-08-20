@@ -1,0 +1,281 @@
+= Data Flow
+
+This page traces every data path in the system: the full component graph, then sequence
+diagrams for the three most important flows — a consultation turn, authentication, and
+final-answer feedback.
+
+NOTE: GitHub's file browser does not render mermaid inside AsciiDoc. When reviewing on
+GitHub, see `docs/data-flow.md` — a mirror of these diagrams in Markdown, which GitHub
+renders natively. This page is the canonical source; keep the mirror in sync.
+
+== System data-flow graph
+
+Every arrow below is a real code path. The GraphQL contract is frozen by a snapshot test;
+the event log is append-only and is the single source of truth for all attempt state.
+
+++++
+<pre class="mermaid">
+flowchart TB
+    subgraph CLIENT["Student / Educator browser"]
+        SPA["React SPA (Vite, TypeScript)<br/>Apollo Client + local reducer<br/>EN / LV via react-i18next"]
+        ES["EventSource<br/>(SSE consumer)"]
+    end
+
+    subgraph EDGE["Caddy — TLS, security headers"]
+        RT{"route"}
+    end
+
+    subgraph FE["frontend container"]
+        NG["nginx — static SPA bundle"]
+    end
+
+    subgraph BE["backend container — FastAPI (async)"]
+        subgraph TRANSPORT["Transport layer (thin)"]
+            GQL["Strawberry GraphQL /graphql<br/>5 queries · 20+ mutations<br/>DataLoaders per request"]
+            SSE["SSE route /sse/parent/{id}"]
+            CTX["Request context<br/>cookie → Redis session → user<br/>request-scoped services"]
+            MASK["MaskErrors<br/>unexpected errors hidden"]
+        end
+        subgraph GUARDS["Authorization (ownership-first)"]
+            G1["IsAuthenticated / IsAdmin / IsStaffOrAdmin"]
+            G2["require_attempt_access<br/>owner OR admin OR assignment-scoped staff"]
+            G3["require_cohort_access<br/>staff teaches cohort"]
+        end
+        subgraph SERVICES["Service layer (framework-free)"]
+            SS["SessionService<br/>append events → fold projection"]
+            RTR["Action router<br/>EN: heuristic CaseEngine<br/>LV/hybrid: Claude tool-use"]
+            CE["CaseEngine<br/>detectTests · parseLab · flagRow<br/>(1:1 JSX port)"]
+            PR["Prompt builders<br/>parent · tutor · hints · feedback"]
+            AUTH["AuthService<br/>magic links · rate limits"]
+            COH["CohortService"]
+            CAS["CaseAuthoringService<br/>draft → publish (immutable)"]
+            ANA["AnalyticsService"]
+            RES["ResearchDataService<br/>pseudonymize + k-anonymize"]
+        end
+        subgraph STORES["Store seam"]
+            AS["DbAttemptStore<br/>append + load + sync projection"]
+            CS["DbCaseSource<br/>published case versions"]
+            US["DbUserStore<br/>pgcrypto encrypt/decrypt"]
+        end
+        REPO["Repositories<br/>(only DB-aware layer)"]
+    end
+
+    subgraph WORKER["worker container — ARQ"]
+        W1["send_magic_link"]
+        W2["generate_research_export<br/>(pseudonymized JSON + CSV)"]
+    end
+
+    subgraph MCPS["/mcp — research MCP server (optional)"]
+        MAUTH["Bearer-token middleware<br/>constant-time compare"]
+        MTOOLS["5 read-only tools<br/>list_attempts · timeline · feedback<br/>cohorts · aggregate_stats"]
+    end
+
+    subgraph PG["PostgreSQL"]
+        TU["users<br/>PII pgcrypto-encrypted<br/>HMAC login hash"]
+        TC["cases · case_versions<br/>case_localizations · case_tests"]
+        TA["attempts<br/>projection cache: phase/status"]
+        TE["events — append-only JSONB<br/>(seq per attempt, source of truth)"]
+        TH["cohorts · memberships<br/>staff_cohorts · assignments · audit_log"]
+    end
+
+    subgraph RD["Redis"]
+        R1["sess:* opaque sessions"]
+        R2["ml:* magic-link tokens<br/>(single-use GETDEL)"]
+        R3["rl:* rate-limit buckets"]
+        R4["ARQ job queue"]
+    end
+
+    subgraph EXT["External services"]
+        ANTH["Anthropic API<br/>(key server-side only)"]
+        RESEND["Resend<br/>transactional email"]
+    end
+
+    RAG["Research agent<br/>(MCP client)"]
+
+    SPA -- "HTTPS" --> RT
+    ES -- "HTTPS" --> RT
+    RT -- "/graphql* /sse/*" --> GQL
+    RT -- "/sse/parent/*" --> SSE
+    RT -- "everything else" --> NG
+    NG -- "index.html + assets" --> SPA
+
+    GQL --> CTX --> G1
+    GQL --> MASK
+    G1 --> G2 --> SS
+    G1 --> G3 --> COH
+    CTX -- "resolve sid" --> R1
+    CTX -- "load user" --> US
+
+    SSE -- "cookie + owner check" --> G2
+    SSE -- "stream deltas" --> ANTH
+    SSE -- "append ParentReplyAppended" --> SS
+
+    SS --> RTR
+    RTR -- "English" --> CE
+    RTR -- "Latvian / ambiguous" --> ANTH
+    SS --> PR
+    PR -- "evals · hints · structured feedback" --> ANTH
+    SS --> AS
+    SS -- "get_case" --> CS
+    AS --> REPO
+    CS --> REPO
+    US --> REPO
+    COH --> REPO
+    CAS --> REPO
+    ANA --> REPO
+
+    REPO --> TU
+    REPO --> TC
+    REPO --> TA
+    REPO --> TE
+    REPO --> TH
+
+    AUTH --> R2
+    AUTH --> R3
+    AUTH -- "enqueue email job" --> R4
+    R4 --> W1 --> RESEND
+    W2 --> RES
+
+    RAG -- "Bearer token" --> MAUTH --> MTOOLS --> RES
+    RES --> REPO
+</pre>
+++++
+
+== Consultation turn
+
+The defining flow of the application: a student sends a message to the AI parent. The
+mutation appends events and decides the branch; only the `parent` branch opens the SSE
+stream, which is where the LLM reply is generated and persisted.
+
+++++
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant B as Browser (SPA)
+    participant G as GraphQL /graphql
+    participant S as SessionService
+    participant R as Action router
+    participant P as PostgreSQL (events)
+    participant E as SSE /sse/parent/{id}
+    participant A as Anthropic API
+
+    B->>G: sendMessage(sessionId, text)
+    G->>G: require_attempt_access(owner, write)
+    G->>S: send_message()
+    S->>P: load events → fold projection
+    alt English attempt
+        S->>R: heuristic CaseEngine (is_test_order?)
+    else Latvian / hybrid routing
+        S->>A: tool-use routing (order_test | request_exam | ask_parent)
+    end
+    alt test order
+        S->>P: append TestOrdered + LabResultShown (+ nudges)
+    else exam request
+        S->>P: append ExamPerformed (+ practice note)
+    else parent turn
+        S->>P: append StudentMessageSent + ParentReplyRequested<br/>(system prompt + trimmed history)
+    end
+    S->>P: sync projection cache (phase/status)
+    G-->>B: branch + updated session projection
+    opt branch == parent
+        B->>E: open EventSource (session cookie)
+        E->>E: resolve user, verify attempt owner
+        E->>P: load pending ParentReplyRequested
+        E->>A: messages.stream(parent prompt, history)
+        A-->>E: text deltas
+        E-->>B: data: {delta} … (rendered live)
+        E->>P: append ParentReplyAppended (+ exam nudge on 5th reply)
+        E-->>B: data: {done}
+    end
+</pre>
+++++
+
+== Authentication (passwordless magic link)
+
+Six-digit RSU student numbers, locked `@rsu.edu.lv` addresses, opaque server-side sessions.
+Responses are identical whether or not an account exists, so login names cannot be enumerated.
+
+++++
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant G as GraphQL
+    participant AU as AuthService
+    participant R as Redis
+    participant PG as PostgreSQL (users)
+    participant Q as ARQ worker
+    participant M as Resend
+
+    B->>G: registerStudent(loginName)
+    G->>AU: register_student(login, ip)
+    AU->>R: rate limit (per IP + per subject)
+    AU-->>G: ok (constant response)
+    AU->>PG: create user — pgp_sym_encrypt(PII), hmac(login) hash
+    AU->>R: store magic-link token (TTL 15 min)
+    AU->>Q: enqueue send_magic_link
+    Q->>M: email → {login}@rsu.edu.lv
+    M-->>B: link https://caseroom.tech/auth/verify?token=…
+    B->>B: explicit confirm page (no auto-consume)
+    B->>G: consumeMagicLink(token)
+    G->>AU: consume_link(token, ip)
+    AU->>R: rate limit consume per IP
+    AU->>R: GETDEL token (single use)
+    AU->>PG: activate user + stamp consent version
+    AU->>R: create opaque session
+    G-->>B: Set-Cookie (httpOnly · Secure · SameSite=Lax)
+</pre>
+++++
+
+== Final answer and structured feedback
+
+++++
+<pre class="mermaid">
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant G as GraphQL
+    participant S as SessionService
+    participant A as Anthropic API
+    participant P as PostgreSQL
+
+    B->>G: submitFinalAnswer(sessionId, answer)
+    G->>G: require_attempt_access(owner, write)
+    G->>S: set_final_answer_fields (one batch, 7 events)
+    S->>P: append FinalAnswerFieldSet ×7
+    G->>S: submit_final_answer()
+    S->>A: structured output (frozen FEEDBACK_SCHEMA:<br/>accuracy, scores, clues, pathways)
+    A-->>S: validated JSON feedback
+    S->>P: append FeedbackGenerated + PhaseChanged(feedback)
+    S->>P: projection cache → status=completed, completed_at
+    G-->>B: session with feedback report
+    Note over B: FeedbackReport renders scores,<br/>key clues, reasoning pathway
+</pre>
+++++
+
+== Where data lives
+
+[cols="1,2,2"]
+|===
+|Store |Data |Protection
+
+|PostgreSQL `users`
+|login number, email, full name
+|pgcrypto `pgp_sym_encrypt` at rest; lookups via peppered HMAC hash; decrypted only for the requesting principal
+
+|PostgreSQL `events`
+|full attempt transcript as append-only events
+|owner/admin/assignment-scoped-staff reads only; research access is scrubbed (allow-listed categorical fields, no free text)
+
+|PostgreSQL `cases*`
+|clinician-authored clinical content, versioned
+|published versions immutable; no AI writes any clinical field
+
+|Redis
+|sessions, magic-link tokens, rate-limit counters, job queue
+|opaque 256-bit tokens; single-use links; internal network only
+
+|Anthropic API
+|case prompts + conversation excerpts (transient)
+|server-side key; no student identifiers included in prompts
+|===

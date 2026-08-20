@@ -1,10 +1,24 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Protocol
 
 from app.schemas.case import Case
-from app.services.projection import EventRecord, EventType, NewEvent
+from app.services.projection import (
+    AttemptProjection,
+    EventRecord,
+    EventType,
+    NewEvent,
+)
+
+
+@dataclass
+class AttemptMeta:
+    started_at: datetime
+    completed_at: datetime | None
+    status: str
 
 
 class AttemptStore(Protocol):
@@ -19,11 +33,25 @@ class AttemptStore(Protocol):
 
     async def load_events(self, attempt_id: str) -> list[EventRecord]: ...
 
+    async def load_events_many(
+        self, attempt_ids: list[str]
+    ) -> dict[str, list[EventRecord]]: ...
+
     async def append_events(
         self, attempt_id: str, events: list[NewEvent]
     ) -> list[EventRecord]: ...
 
     async def get_attempt_owner(self, attempt_id: str) -> str | None: ...
+
+    async def get_attempt_meta(self, attempt_id: str) -> AttemptMeta | None: ...
+
+    async def sync_projection(
+        self, attempt_id: str, proj: AttemptProjection
+    ) -> None: ...
+
+
+def _projection_status(proj: AttemptProjection) -> str:
+    return "completed" if proj.feedback is not None else "in_progress"
 
 
 class CaseSource(Protocol):
@@ -33,7 +61,7 @@ class CaseSource(Protocol):
 class InMemoryAttemptStore:
     def __init__(self) -> None:
         self._events: dict[str, list[EventRecord]] = {}
-        self._meta: dict[str, dict[str, str | None]] = {}
+        self._meta: dict[str, dict] = {}
 
     async def create_attempt(
         self,
@@ -51,17 +79,50 @@ class InMemoryAttemptStore:
             "language": language,
             "student_id": student_id,
             "assignment_id": assignment_id,
+            "started_at": datetime.now(timezone.utc),
+            "completed_at": None,
+            "status": "in_progress",
         }
         return attempt_id
 
     async def load_events(self, attempt_id: str) -> list[EventRecord]:
         return list(self._events.get(attempt_id, []))
 
+    async def load_events_many(
+        self, attempt_ids: list[str]
+    ) -> dict[str, list[EventRecord]]:
+        return {
+            attempt_id: list(self._events.get(attempt_id, []))
+            for attempt_id in attempt_ids
+        }
+
     async def get_attempt_owner(self, attempt_id: str) -> str | None:
         meta = self._meta.get(attempt_id)
         if meta is None:
             return None
         return meta.get("student_id")
+
+    async def get_attempt_meta(self, attempt_id: str) -> AttemptMeta | None:
+        meta = self._meta.get(attempt_id)
+        if meta is None:
+            return None
+        return AttemptMeta(
+            started_at=meta["started_at"],
+            completed_at=meta["completed_at"],
+            status=meta["status"],
+        )
+
+    async def sync_projection(
+        self, attempt_id: str, proj: AttemptProjection
+    ) -> None:
+        meta = self._meta.get(attempt_id)
+        if meta is None:
+            return
+        status = _projection_status(proj)
+        meta["mode"] = proj.mode
+        meta["status"] = status
+        if status == "completed" and meta["completed_at"] is None:
+            meta["completed_at"] = datetime.now(timezone.utc)
 
     async def append_events(
         self, attempt_id: str, events: list[NewEvent]
@@ -122,9 +183,48 @@ class DbAttemptStore:
             for row in rows
         ]
 
+    async def load_events_many(
+        self, attempt_ids: list[str]
+    ) -> dict[str, list[EventRecord]]:
+        grouped = await self._repo.load_events_many(
+            [uuid.UUID(attempt_id) for attempt_id in attempt_ids]
+        )
+        return {
+            str(attempt_id): [
+                EventRecord(type=row.type.value, seq=row.seq, data=row.data)
+                for row in rows
+            ]
+            for attempt_id, rows in grouped.items()
+        }
+
     async def get_attempt_owner(self, attempt_id: str) -> str | None:
         owner = await self._repo.get_owner(uuid.UUID(attempt_id))
         return str(owner) if owner is not None else None
+
+    async def get_attempt_meta(self, attempt_id: str) -> AttemptMeta | None:
+        attempt = await self._repo.get_attempt(uuid.UUID(attempt_id))
+        if attempt is None:
+            return None
+        return AttemptMeta(
+            started_at=attempt.started_at,
+            completed_at=attempt.completed_at,
+            status=attempt.status.value,
+        )
+
+    async def sync_projection(
+        self, attempt_id: str, proj: AttemptProjection
+    ) -> None:
+        status = _projection_status(proj)
+        completed_at = (
+            datetime.now(timezone.utc) if status == "completed" else None
+        )
+        await self._repo.update_projection_cache(
+            uuid.UUID(attempt_id),
+            phase=proj.phase,
+            status=status,
+            mode=proj.mode,
+            completed_at=completed_at,
+        )
 
     async def append_events(
         self, attempt_id: str, events: list[NewEvent]

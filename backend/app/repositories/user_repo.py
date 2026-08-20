@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import uuid
 
-from sqlalchemy import bindparam, func, select, update
+from sqlalchemy import bindparam, func, null, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
@@ -96,6 +96,17 @@ class UserRepository:
     async def decrypt_login_name(self, user: User) -> str:
         return await self._session.scalar(select(_decrypt(user.login_name)))
 
+    async def decrypt_profile(
+        self, user: User
+    ) -> tuple[str, str | None, str | None]:
+        columns = [
+            _decrypt(user.login_name),
+            _decrypt(user.email) if user.email is not None else null(),
+            _decrypt(user.full_name) if user.full_name is not None else null(),
+        ]
+        row = (await self._session.execute(select(*columns))).first()
+        return row[0], row[1], row[2]
+
     async def decrypt_email(self, user: User) -> str | None:
         if user.email is None:
             return None
@@ -165,3 +176,8 @@ class DbUserStore:
 
     async def decrypt_full_name(self, user: User) -> str | None:
         return await self._repo.decrypt_full_name(user)
+
+    async def decrypt_profile(
+        self, user: User
+    ) -> tuple[str, str | None, str | None]:
+        return await self._repo.decrypt_profile(user)

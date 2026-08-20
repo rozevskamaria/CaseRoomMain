@@ -112,8 +112,10 @@ def _append(proj: AttemptProjection, message_id: str, type: str, text: str) -> N
     proj.messages.append(Message(id=message_id, type=type, text=text))
 
 
-def fold(events: list[EventRecord]) -> AttemptProjection:
-    proj = AttemptProjection()
+def fold(
+    events: list[EventRecord], base: AttemptProjection | None = None
+) -> AttemptProjection:
+    proj = base if base is not None else AttemptProjection()
     for event in sorted(events, key=lambda e: e.seq):
         data = event.data
         etype = event.type

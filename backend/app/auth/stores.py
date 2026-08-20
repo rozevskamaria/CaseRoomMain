@@ -124,15 +124,18 @@ class InMemoryMagicLinkStore:
 
 class InMemoryRateLimiter:
     def __init__(self) -> None:
-        self._buckets: dict[str, int] = {}
+        self._buckets: dict[str, tuple[int, int]] = {}
 
     async def allow(
         self, action: str, subject: str, limit: int, window: int
     ) -> bool:
         bucket = int(time.time()) // window
-        key = f"{action}:{subject}:{bucket}"
-        count = self._buckets.get(key, 0) + 1
-        self._buckets[key] = count
+        key = f"{action}:{subject}"
+        prev_bucket, count = self._buckets.get(key, (bucket, 0))
+        if prev_bucket != bucket:
+            count = 0
+        count += 1
+        self._buckets[key] = (bucket, count)
         return count <= limit
 
 

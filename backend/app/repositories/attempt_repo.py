@@ -58,6 +58,24 @@ class AttemptRepository:
         result = await self._session.scalars(stmt)
         return list(result)
 
+    async def load_events_many(
+        self, attempt_ids: list[uuid.UUID]
+    ) -> dict[uuid.UUID, list[Event]]:
+        if not attempt_ids:
+            return {}
+        stmt = (
+            select(Event)
+            .where(Event.attempt_id.in_(attempt_ids))
+            .order_by(Event.attempt_id, Event.seq)
+        )
+        result = await self._session.scalars(stmt)
+        grouped: dict[uuid.UUID, list[Event]] = {
+            attempt_id: [] for attempt_id in attempt_ids
+        }
+        for row in result:
+            grouped[row.attempt_id].append(row)
+        return grouped
+
     async def append_events(
         self, attempt_id: uuid.UUID, events: list[NewEvent]
     ) -> list[Event]:
@@ -97,5 +115,6 @@ class AttemptRepository:
         attempt.phase = phase
         attempt.status = AttemptStatus(status)
         attempt.mode = mode
-        attempt.completed_at = completed_at
+        if attempt.completed_at is None:
+            attempt.completed_at = completed_at
         await self._session.flush()

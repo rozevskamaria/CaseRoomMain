@@ -1,0 +1,76 @@
+= Security & Data Protection
+
+== Authentication
+
+* **Passwordless magic links.** Students self-register with their 6-digit RSU student number;
+  the email address is derived and locked to `@rsu.edu.lv`. There are no passwords to phish
+  or leak.
+* Magic-link tokens are 256-bit URL-safe random values, stored in Redis with a 15-minute TTL
+  and consumed atomically (`GETDEL`) — strictly single-use. The verify page requires an
+  explicit click; links are never consumed by mail-scanner prefetches.
+* Sessions are opaque 256-bit tokens stored server-side in Redis and carried in an
+  `httpOnly`, `Secure` (production), `SameSite=Lax` cookie. Nothing about the user is stored
+  client-side; logout and revoke-all invalidate server state.
+* Responses to registration and login-link requests are constant regardless of whether the
+  account exists — login names cannot be enumerated.
+* `devLogin` exists for local development only and is rejected in any environment other than
+  `APP_ENV=development`.
+
+== Authorization
+
+Role model: `student`, `staff`, `admin`.
+
+* **Ownership-first attempt access**: a student reads and writes only their own attempts.
+  Guards run at the resolver *and* are re-checked on nested fields (`messages`, `feedback`,
+  `events`) and on the SSE stream, so no query shape bypasses them.
+* **Assignment-scoped staff access**: staff read an attempt only when it is linked to an
+  assignment in a cohort they teach. Enrolling a student does not grant transcript access;
+  free-play attempts are invisible to staff by construction. Enrollment actions are audit-logged.
+* **Admin** has full access and is bootstrapped from configuration at startup.
+* Case authoring is restricted to staff and admin; published case versions are immutable.
+
+== Personal data (GDPR posture)
+
+Students are identifiable research subjects in the EU. Measures in place:
+
+* PII (login number, email, full name) is encrypted at rest with pgcrypto
+  (`pgp_sym_encrypt`); equality lookups use a peppered HMAC (`login_name_hash`), so the
+  database never stores plaintext identifiers.
+* Attempt transcripts are readable only by their owner, admins, and assignment-scoped staff.
+* Research access (MCP tools, exports) is **pseudonymized** with a dedicated HMAC pepper that
+  is validated to differ from the encryption key and login pepper, **k-anonymized**
+  (small-group results suppressed as `low_n`), timestamp-coarsened, and **withholds all free
+  text** via a per-event-type field allow-list.
+* Consent version is stamped at account activation.
+* Hosting is a single EU (Hetzner) server.
+
+== Abuse resistance
+
+* Rate limits (Redis, per-IP and per-subject) on registration, login-link requests, and
+  magic-link consumption. Production uvicorn runs with `--proxy-headers` so limits apply to
+  real client addresses behind the reverse proxy.
+* The MCP research surface is disabled by default and, when enabled, requires a bearer token
+  compared in constant time on every sub-request.
+* CORS is restricted to the configured origins; GraphiQL is served only in development.
+
+== Error handling and secrets
+
+* Unexpected resolver errors are masked (`MaskErrors`) — clients receive a generic message
+  while expected application errors (authorization denials, validation) pass through.
+* The Anthropic API key exists only in backend configuration. The browser bundle contains no
+  secrets — build-time variables are limited to public URLs.
+* The backend **refuses to start in production** if `ANTHROPIC_API_KEY`, `PGCRYPTO_KEY`,
+  `LOGIN_HASH_PEPPER`, or `RESEND_API_KEY` is unset, if `PUBLIC_BASE_URL` still points at
+  localhost, or if MCP is enabled without its token and pepper — misconfiguration fails fast
+  instead of degrading silently.
+* Caddy terminates TLS and adds HSTS, `X-Content-Type-Options: nosniff`,
+  `X-Frame-Options: DENY`, `Referrer-Policy`, and a minimal `Permissions-Policy`.
+
+== Known accepted risks
+
+* GraphQL introspection remains enabled — the SDL is a public, frozen artifact of the repo.
+* No Content-Security-Policy header yet; it requires a visual smoke test against the built
+  app before enabling.
+* No per-student rate limit on LLM-invoking mutations (cost exposure, not a data-safety risk).
+* Redis runs unauthenticated on the internal compose network only; it is not reachable from
+  outside the host.
