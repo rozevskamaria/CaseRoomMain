@@ -69,8 +69,6 @@ GitHub Actions (`.github/workflows/ci.yml`) runs on every push and pull request:
 
 == Accessing this documentation
 
-* **Production**: Caddy serves the built site at `https://caseroom.tech/docs/` from a
-  read-only volume (`deploy/docs-site`), refreshed on every deploy.
 * **Locally**: `npm run docs:build`, then open `build/site/index.html` or serve it
   (`python3 -m http.server -d build/site 8043`).
 
